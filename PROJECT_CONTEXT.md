@@ -35,13 +35,15 @@
 - `tests/` — базовый test package.
 - `.pre-commit-config.yaml` — pre-commit hooks для hygiene-проверок и Ruff.
 - `Makefile` — локальный command interface проекта.
-- `docker-compose.yml` — локальная инфраструктура PostgreSQL для dev/test БД.
+- `docker-compose.yml` — локальная инфраструктура PostgreSQL с одной основной БД для dev и тестов.
 - `tests/test_scaffold.py` — smoke-test на импорт scaffold-пакета.
 
 Task 01: Scaffold Python project выполнен и проверен.
 Task 03: Add Ruff and pre-commit выполнен и проверен.
 Task 02: Add Makefile and local command interface выполнен и проверен.
-Task 04: Add Docker Compose for local databases выполнен и проверен.
+Task 04: Add Docker Compose for local database выполнен и проверен.
+Task 05: Add settings and logging выполнен и проверен; добавлены typed settings, безопасное
+маскирование секретов, базовый console logging и unit-тесты.
 
 Проверки Task 01:
 
@@ -90,7 +92,8 @@ C:\Users\sqd12\Documents\ChatGPT\Zakupich
 - Таблицу `list_members` не создавать в MVP migrations; future-схема сохранена отдельно в `DATABASE_SCHEMA.md`.
 - Redis не добавлять, пока явно не понадобится.
 - Основная БД: PostgreSQL.
-- Docker Compose используется только для локальной инфраструктуры: dev DB и test DB.
+- Docker Compose используется только для локальной инфраструктуры: одна основная PostgreSQL DB для dev и тестов.
+- Тесты не используют отдельную test DB и `TEST_DATABASE_URL`; интеграционные фикстуры должны очищать данные после каждого теста.
 - Архитектура: clean/onion layers.
 - Все constant string и enum-like значения собираются в классы с суффиксом `Enum`.
 - Избегаем magic values.
@@ -129,7 +132,7 @@ PostgreSQL enum types:
 - Ruff
 - pre-commit
 - pytest + pytest-asyncio
-- Docker Compose for local/test DB
+- Docker Compose for local DB
 - Makefile
 
 ## Архитектурные слои
@@ -155,13 +158,13 @@ Domain не должен импортировать Telegram, SQLAlchemy session
 
 ## Следующий шаг
 
-Продолжить по `.omx/plans/implementation-plan.md` с Task 05: Add settings and logging.
+Продолжить по `.omx/plans/implementation-plan.md` с Task 06: Define domain enum-like classes and constants.
 
 Рекомендуемый prompt для следующего шага:
 
 ```text
 Прочитай PROJECT_CONTEXT.md, AGENTS.md, DATABASE_SCHEMA.md и .omx/plans/implementation-plan.md.
-Продолжи реализацию с Task 05: Add settings and logging.
+Продолжи реализацию с Task 06: Define domain enum-like classes and constants.
 Следуй acceptance criteria и не переходи к следующим task без проверки.
 ```
 

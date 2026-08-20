@@ -27,7 +27,7 @@ pre-commit:
 	$(POETRY) run pre-commit run --all-files
 
 db-up:
-	$(DOCKER_COMPOSE) up -d postgres postgres_test
+	$(DOCKER_COMPOSE) up -d postgres
 
 db-down:
 	$(DOCKER_COMPOSE) down

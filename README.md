@@ -11,9 +11,10 @@ Tasks completed:
 - Task 01: Python project scaffold
 - Task 03: Ruff and pre-commit configuration
 - Task 02: Makefile command interface
-- Task 04: Docker Compose local databases
+- Task 04: Docker Compose local database
+- Task 05: Typed settings and logging
 
-Business logic, database models, migrations, and bot handlers are intentionally left for later tasks in `.omx/plans/implementation-plan.md`.
+Domain constants, business logic, database models, migrations, and bot handlers are intentionally left for later tasks in `.omx/plans/implementation-plan.md`.
 
 ## Requirements
 
@@ -63,11 +64,12 @@ make -f Makefile lint
 
 Copy `.env.example` to `.env` for local development and fill in real values locally. Do not commit `.env`.
 
-Local PostgreSQL services use these default URLs:
+Local PostgreSQL uses this default URL:
 
 ```text
 DATABASE_URL=postgresql+asyncpg://shopping_user:shopping_password@localhost:5432/shopping_bot
-TEST_DATABASE_URL=postgresql+asyncpg://shopping_user:shopping_password@localhost:5433/shopping_bot_test
 ```
+
+Tests use the same local Docker database and must clean up their data after each test via the repository/session test fixtures.
 
 OpenAI configuration is not required for the MVP scaffold.
