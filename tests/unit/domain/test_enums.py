@@ -3,7 +3,7 @@ from types import ModuleType
 
 from app.core import constants
 from app.domain import enums
-from app.domain.enums import CATEGORY_NAMES_RU
+from app.domain.categories import CATEGORY_DEFINITIONS
 
 
 def enum_values(enum_class: type) -> list[str]:
@@ -60,10 +60,23 @@ def test_parser_source_values_match_schema_check_constraint() -> None:
 
 
 def test_category_other_is_fallback_to_miscellaneous_label() -> None:
+    default_categories = [
+        category for category in CATEGORY_DEFINITIONS if category.is_default
+    ]
+
     assert enums.CategoryCodeEnum.OTHER == "other"
-    assert CATEGORY_NAMES_RU[enums.CategoryCodeEnum.OTHER] == "Прочие"
+    assert default_categories == [
+        next(
+            category
+            for category in CATEGORY_DEFINITIONS
+            if category.code == enums.CategoryCodeEnum.OTHER
+        ),
+    ]
+    assert default_categories[0].name_ru == "Прочие"
 
 
 def test_category_codes_cover_mvp_category_labels() -> None:
-    assert set(enum_values(enums.CategoryCodeEnum)) == set(CATEGORY_NAMES_RU)
-    assert len(CATEGORY_NAMES_RU) == 19
+    assert set(enum_values(enums.CategoryCodeEnum)) == {
+        category.code for category in CATEGORY_DEFINITIONS
+    }
+    assert len(CATEGORY_DEFINITIONS) == 19

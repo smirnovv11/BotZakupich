@@ -37,26 +37,3 @@ class CategoryCodeEnum:
     HYGIENE = "hygiene"
     HOME_GOODS = "home_goods"
     OTHER = "other"
-
-
-CATEGORY_NAMES_RU = {
-    CategoryCodeEnum.DAIRY: "Молочные продукты",
-    CategoryCodeEnum.BAKERY: "Хлеб и выпечка",
-    CategoryCodeEnum.VEGETABLES_GREENS: "Овощи и зелень",
-    CategoryCodeEnum.FRUITS_BERRIES: "Фрукты и ягоды",
-    CategoryCodeEnum.MEAT_POULTRY: "Мясо и птица",
-    CategoryCodeEnum.FISH_SEAFOOD: "Рыба и морепродукты",
-    CategoryCodeEnum.SAUSAGES_DELI: "Колбасы и деликатесы",
-    CategoryCodeEnum.EGGS: "Яйца",
-    CategoryCodeEnum.GRAINS_PASTA_FLOUR: "Крупы, макароны, мука",
-    CategoryCodeEnum.CANNED: "Консервы",
-    CategoryCodeEnum.FROZEN: "Заморозка",
-    CategoryCodeEnum.SWEETS_SNACKS: "Сладости и снеки",
-    CategoryCodeEnum.DRINKS: "Напитки",
-    CategoryCodeEnum.TEA_COFFEE: "Чай, кофе",
-    CategoryCodeEnum.SAUCES_SPICES: "Соусы и специи",
-    CategoryCodeEnum.HOUSEHOLD_CHEMICALS: "Бытовая химия",
-    CategoryCodeEnum.HYGIENE: "Гигиена",
-    CategoryCodeEnum.HOME_GOODS: "Товары для дома",
-    CategoryCodeEnum.OTHER: "Прочие",
-}
