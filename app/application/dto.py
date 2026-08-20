@@ -52,6 +52,50 @@ class GetCurrentListQuery:
 
 
 @dataclass(frozen=True, slots=True)
+class StartShoppingCommand:
+    telegram_user_id: int
+    started_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class StartShoppingResult:
+    list_id: int
+    list_status: str
+    shopping_started_at: datetime
+    item_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class ToggleItemCommand:
+    telegram_user_id: int
+    item_id: int
+    toggled_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class ToggleItemResult:
+    item_id: int
+    list_id: int
+    status: str
+    bought_at: datetime | None
+    bought_by_user_id: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class FinishShoppingCommand:
+    telegram_user_id: int
+    finished_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class FinishShoppingResult:
+    list_id: int
+    list_status: str
+    archived_at: datetime
+    archived_by_user_id: int
+
+
+@dataclass(frozen=True, slots=True)
 class ListItemDTO:
     item_id: int
     display_text: str
