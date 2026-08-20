@@ -1,11 +1,15 @@
 """Database seed helpers."""
 
+import asyncio
+
 from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import Settings
 from app.domain.categories import CATEGORY_DEFINITIONS, CategoryDefinition
 from app.infrastructure.db.models import Category
+from app.infrastructure.db.session import create_database
 
 
 def validate_category_definitions(
@@ -53,3 +57,21 @@ async def seed_categories(
             )
         )
         await session.execute(statement)
+
+
+async def seed_database_from_settings() -> None:
+    database = create_database(Settings())
+    try:
+        async with database.session_factory() as session:
+            await seed_categories(session)
+            await session.commit()
+    finally:
+        await database.engine.dispose()
+
+
+def main() -> None:
+    asyncio.run(seed_database_from_settings())
+
+
+if __name__ == "__main__":
+    main()
