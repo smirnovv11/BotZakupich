@@ -2,14 +2,16 @@
 
 import logging
 
-from pydantic import SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Typed runtime configuration with secrets hidden from representations."""
 
-    telegram_bot_token: SecretStr
+    telegram_bot_token: SecretStr = Field(
+        validation_alias=AliasChoices("TELEGRAM_BOT_TOKEN", "BOT_TOKEN"),
+    )
     database_url: SecretStr
     environment: str = "local"
     log_level: str = "INFO"
@@ -20,6 +22,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        populate_by_name=True,
     )
 
     @field_validator(

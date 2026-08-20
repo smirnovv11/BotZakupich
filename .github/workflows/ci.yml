@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/zakupich
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: shopping_bot
+          POSTGRES_USER: shopping_user
+          POSTGRES_PASSWORD: shopping_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shopping_user -d shopping_bot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://shopping_user:shopping_password@localhost:5432/shopping_bot
+      TELEGRAM_BOT_TOKEN: 123456:test-token
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-ansi
+
+      - name: Run Ruff lint
+        run: poetry run ruff check .
+
+      - name: Run Ruff format check
+        run: poetry run ruff format --check .
+
+      - name: Run tests
+        run: poetry run pytest
+
+      - name: Build Docker image
+        run: docker build -t zakupich:test .
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "${IMAGE_NAME}:latest" \
+            -t "${IMAGE_NAME}:${GITHUB_SHA}" \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push "${IMAGE_NAME}:latest"
+          docker push "${IMAGE_NAME}:${GITHUB_SHA}"
+
+      - name: Trigger Northflank deployment
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.NORTHFLANK_BOT_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "${DEPLOY_HOOK_URL}" ]; then
+            echo "NORTHFLANK_BOT_DEPLOY_HOOK_URL is not set; skipping deploy hook."
+            exit 0
+          fi
+
+          curl --fail --silent --show-error --request POST "${DEPLOY_HOOK_URL}"

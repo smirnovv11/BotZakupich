@@ -26,6 +26,18 @@ def test_settings_load_from_environment(monkeypatch: pytest.MonkeyPatch) -> None
     assert settings.parser_version == "test-v1"
 
 
+def test_settings_accept_northflank_bot_token_alias(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.setenv("BOT_TOKEN", TELEGRAM_TOKEN)
+    monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.telegram_bot_token.get_secret_value() == TELEGRAM_TOKEN
+
+
 def test_settings_load_from_env_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

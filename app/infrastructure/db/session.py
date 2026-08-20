@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.core.config import Settings
+from app.infrastructure.db.url import normalize_asyncpg_url
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,8 @@ class Database:
 
 
 def create_engine(database_url: str, *, echo: bool = False) -> AsyncEngine:
-    return create_async_engine(database_url, echo=echo)
+    normalized_url, connect_args = normalize_asyncpg_url(database_url)
+    return create_async_engine(normalized_url, echo=echo, connect_args=connect_args)
 
 
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:

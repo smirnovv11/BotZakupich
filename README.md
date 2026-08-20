@@ -54,6 +54,12 @@ make revision name="describe_change"
 make run
 ```
 
+The production console command installed by Poetry is:
+
+```bash
+zakupich-bot
+```
+
 On older GnuWin32 `make` builds in Unicode paths, automatic Makefile discovery may fail. In that case, use a modern `make` or pass the file explicitly:
 
 ```bash
@@ -73,3 +79,30 @@ DATABASE_URL=postgresql+asyncpg://shopping_user:shopping_password@localhost:5432
 Tests use the same local Docker database and must clean up their data after each test via the repository/session test fixtures.
 
 OpenAI configuration is not required for the MVP scaffold.
+
+## Northflank Deployment
+
+Build and publish the Docker image to:
+
+```text
+ghcr.io/<github-owner>/zakupich:latest
+ghcr.io/<github-owner>/zakupich:<commit-sha>
+```
+
+Create one Northflank service named `zakupich-bot` from the GHCR image, keep replicas set to `1`, and use the command:
+
+```bash
+zakupich-bot
+```
+
+Set service variables:
+
+```env
+BOT_TOKEN=123456:telegram-token-from-botfather
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/database?sslmode=require
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+RUN_MIGRATIONS=true
+```
+
+The container entrypoint runs `alembic upgrade head` before starting the bot when `RUN_MIGRATIONS=true`.
