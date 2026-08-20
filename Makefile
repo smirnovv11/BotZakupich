@@ -6,7 +6,7 @@ endif
 POETRY ?= poetry
 DOCKER_COMPOSE ?= docker compose
 
-.PHONY: install lint format format-check test pre-commit db-up db-down migrate revision run
+.PHONY: install lint format format-check test pre-commit db-up db-down migrate downgrade seed revision run
 
 install:
 	$(POETRY) install
@@ -34,6 +34,12 @@ db-down:
 
 migrate:
 	$(POETRY) run alembic upgrade head
+
+downgrade:
+	$(POETRY) run alembic downgrade -1
+
+seed:
+	$(POETRY) run python -m app.infrastructure.db.seeds
 
 revision:
 	$(POETRY) run alembic revision --autogenerate -m "$(name)"
