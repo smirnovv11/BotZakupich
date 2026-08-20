@@ -70,6 +70,19 @@ class InputMessageRepository(Protocol):
         parser_metadata: dict[str, object] | None = None,
     ) -> Any: ...
 
+    async def get_or_create_by_telegram_message(
+        self,
+        *,
+        user_id: int,
+        telegram_chat_id: int,
+        telegram_message_id: int,
+        raw_text: str,
+        parser_source: str,
+        received_at: datetime,
+        parser_version: str | None = None,
+        parser_metadata: dict[str, object] | None = None,
+    ) -> tuple[Any, bool]: ...
+
 
 class ShoppingItemRepository(Protocol):
     async def get_by_id(self, item_id: int) -> Any | None: ...
