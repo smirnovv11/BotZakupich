@@ -73,6 +73,31 @@ class SqlAlchemyShoppingListRepository:
             .order_by(ShoppingList.created_at.desc()),
         )
 
+    async def list_archived_by_owner(self, owner_user_id: int) -> list[ShoppingList]:
+        result = await self.session.scalars(
+            select(ShoppingList)
+            .where(
+                ShoppingList.owner_user_id == owner_user_id,
+                ShoppingList.status == ShoppingListStatusEnum.ARCHIVED,
+            )
+            .order_by(ShoppingList.archived_at.desc()),
+        )
+        return list(result)
+
+    async def get_archived_by_owner(
+        self,
+        *,
+        list_id: int,
+        owner_user_id: int,
+    ) -> ShoppingList | None:
+        return await self.session.scalar(
+            select(ShoppingList).where(
+                ShoppingList.id == list_id,
+                ShoppingList.owner_user_id == owner_user_id,
+                ShoppingList.status == ShoppingListStatusEnum.ARCHIVED,
+            ),
+        )
+
     async def create_draft(
         self,
         *,

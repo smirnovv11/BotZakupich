@@ -96,6 +96,53 @@ class FinishShoppingResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ListArchivesQuery:
+    telegram_user_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class ArchivedListSummaryDTO:
+    list_id: int
+    list_status: str
+    title: str | None
+    archived_at: datetime
+    item_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class ListArchivesResult:
+    archives: tuple[ArchivedListSummaryDTO, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class GetArchivedListQuery:
+    telegram_user_id: int
+    archived_list_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class RestoreArchivedItemsCommand:
+    telegram_user_id: int
+    archived_list_id: int
+    item_ids: tuple[int, ...] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RestoredItemDTO:
+    item_id: int
+    restored_from_item_id: int
+    display_text: str
+    position: int
+
+
+@dataclass(frozen=True, slots=True)
+class RestoreArchivedItemsResult:
+    list_id: int
+    list_status: str
+    restored_items: tuple[RestoredItemDTO, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ListItemDTO:
     item_id: int
     display_text: str
@@ -118,6 +165,19 @@ class CurrentListDTO:
     list_id: int | None
     list_status: str | None
     title: str | None
+    categories: tuple[ListCategoryDTO, ...]
+
+    @property
+    def is_empty(self) -> bool:
+        return not any(category.items for category in self.categories)
+
+
+@dataclass(frozen=True, slots=True)
+class ArchivedListDTO:
+    list_id: int
+    list_status: str
+    title: str | None
+    archived_at: datetime
     categories: tuple[ListCategoryDTO, ...]
 
     @property

@@ -25,6 +25,15 @@ class ShoppingListRepository(Protocol):
 
     async def get_current_by_owner(self, owner_user_id: int) -> Any | None: ...
 
+    async def list_archived_by_owner(self, owner_user_id: int) -> list[Any]: ...
+
+    async def get_archived_by_owner(
+        self,
+        *,
+        list_id: int,
+        owner_user_id: int,
+    ) -> Any | None: ...
+
     async def create_draft(
         self,
         *,
