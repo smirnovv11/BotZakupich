@@ -73,6 +73,15 @@ class SqlAlchemyShoppingListRepository:
             .order_by(ShoppingList.created_at.desc()),
         )
 
+    async def delete_current_by_owner(self, owner_user_id: int) -> ShoppingList | None:
+        shopping_list = await self.get_current_by_owner(owner_user_id)
+        if shopping_list is None:
+            return None
+
+        await self.session.delete(shopping_list)
+        await self.session.flush()
+        return shopping_list
+
     async def list_archived_by_owner(self, owner_user_id: int) -> list[ShoppingList]:
         result = await self.session.scalars(
             select(ShoppingList)

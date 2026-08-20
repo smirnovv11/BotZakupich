@@ -13,6 +13,7 @@ from app.presentation.bot.formatters import (
     EMPTY_ADD_MESSAGE,
     EMPTY_LIST_MESSAGE,
     format_added_items,
+    format_clear_result,
     format_current_list,
 )
 
@@ -46,7 +47,7 @@ def test_format_added_items_single_item() -> None:
         added_items=(make_added_item(10, "молоко"),),
     )
 
-    assert format_added_items(result) == "Добавил:\n- молоко — Молочные продукты"
+    assert format_added_items(result) == "✅ Добавил:\n• молоко — 🥛 Молочные продукты"
 
 
 def test_format_added_items_multiple_items() -> None:
@@ -68,7 +69,7 @@ def test_format_added_items_multiple_items() -> None:
     )
 
     assert format_added_items(result) == (
-        "Добавил:\n- молоко — Молочные продукты\n- хлеб — Хлеб и выпечка"
+        "✅ Добавил:\n• молоко — 🥛 Молочные продукты\n• хлеб — 🥖 Хлеб и выпечка"
     )
 
 
@@ -90,10 +91,10 @@ def test_format_added_items_with_unknown_category_fallback() -> None:
     )
 
     assert format_added_items(result) == (
-        "Добавил:\n"
-        "- манго сушеное — Прочие\n"
+        "✅ Добавил:\n"
+        "• манго сушеное — 🧩 Прочие\n"
         "\n"
-        'Пока не удалось распознать категорию, положил в "Прочие": '
+        '🧩 Пока не удалось распознать категорию, положил в "Прочие": '
         "манго сушеное"
     )
 
@@ -178,12 +179,20 @@ def test_format_current_list_grouped_with_item_statuses() -> None:
     )
 
     assert format_current_list(current_list) == (
-        "Текущий список:\n"
+        "🧾 Текущий список:\n"
         "\n"
-        "Молочные продукты:\n"
-        "[ ] молоко\n"
-        "[x] сыр\n"
+        "🥛 Молочные продукты:\n"
+        "☐ молоко\n"
+        "✅ сыр\n"
         "\n"
-        "Хлеб и выпечка:\n"
-        "[ ] хлеб"
+        "🥖 Хлеб и выпечка:\n"
+        "☐ хлеб"
     )
+
+
+def test_format_clear_result_with_deleted_items_count() -> None:
+    assert format_clear_result(3) == "✨ Список очищен. Удалено товаров: 3."
+
+
+def test_format_clear_result_with_empty_list() -> None:
+    assert format_clear_result(0) == "✨ Список очищен. Товаров в нем не было."

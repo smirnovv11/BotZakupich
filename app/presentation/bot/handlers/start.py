@@ -8,8 +8,8 @@ from app.core.constants import BotCommandEnum
 from app.presentation.bot.keyboards.main import main_menu_keyboard
 
 START_MESSAGE = (
-    "Привет! Я помогу вести список покупок. "
-    "Пока можно открыть меню и подготовиться к покупкам."
+    "👋 Привет! Я помогу вести список покупок. "
+    "Отправьте товары обычным сообщением, а я аккуратно разложу их по категориям."
 )
 
 start_router = Router(name="start")

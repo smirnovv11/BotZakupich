@@ -52,6 +52,17 @@ class GetCurrentListQuery:
 
 
 @dataclass(frozen=True, slots=True)
+class ClearCurrentListCommand:
+    telegram_user_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class ClearCurrentListResult:
+    list_id: int | None
+    deleted_item_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class StartShoppingCommand:
     telegram_user_id: int
     started_at: datetime
