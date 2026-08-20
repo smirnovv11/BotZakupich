@@ -40,9 +40,6 @@ def test_telegram_user_mapping_rejects_missing_user() -> None:
 def test_menu_button_guard_excludes_all_button_texts_from_add_item_handling() -> None:
     expected_menu_texts = {
         ButtonTextEnum.SHOW_LIST,
-        ButtonTextEnum.START_SHOPPING,
-        ButtonTextEnum.FINISH_SHOPPING,
-        ButtonTextEnum.ARCHIVE,
         ButtonTextEnum.RESTORE_ALL,
         ButtonTextEnum.RESTORE_SELECTED,
         ButtonTextEnum.BACK,
@@ -51,6 +48,9 @@ def test_menu_button_guard_excludes_all_button_texts_from_add_item_handling() ->
     assert set(MENU_BUTTON_TEXTS) == expected_menu_texts
     assert all(is_menu_button_text(text) for text in expected_menu_texts)
     assert all(not is_add_item_text(text) for text in expected_menu_texts)
+    assert ButtonTextEnum.START_SHOPPING not in MENU_BUTTON_TEXTS
+    assert ButtonTextEnum.FINISH_SHOPPING not in MENU_BUTTON_TEXTS
+    assert ButtonTextEnum.ARCHIVE not in MENU_BUTTON_TEXTS
 
 
 def test_command_guard_excludes_slash_commands_from_add_item_handling() -> None:

@@ -12,6 +12,7 @@ from app.application.dto import (
     RestoreArchivedItemsResult,
     RestoredItemDTO,
 )
+from app.application.errors import ApplicationError, ApplicationErrorCodeEnum
 from app.application.ports.unit_of_work import UnitOfWork
 from app.application.services.list_presenter import ListPresenter
 from app.domain.categories import CATEGORY_DEFINITIONS
@@ -62,14 +63,20 @@ class GetArchivedListUseCase:
         async with self.unit_of_work_factory() as unit_of_work:
             user = await unit_of_work.users.get_by_telegram_id(query.telegram_user_id)
             if user is None:
-                raise ValueError("archived shopping list was not found")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ARCHIVED_LIST_NOT_FOUND,
+                    "archived shopping list was not found",
+                )
 
             archived_list = await unit_of_work.shopping_lists.get_archived_by_owner(
                 list_id=query.archived_list_id,
                 owner_user_id=user.id,
             )
             if archived_list is None:
-                raise ValueError("archived shopping list was not found")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ARCHIVED_LIST_NOT_FOUND,
+                    "archived shopping list was not found",
+                )
 
             items = await unit_of_work.shopping_items.list_by_list_id(archived_list.id)
             categories = await _load_categories(unit_of_work)
@@ -97,14 +104,20 @@ class RestoreArchivedItemsUseCase:
                 command.telegram_user_id,
             )
             if user is None:
-                raise ValueError("archived shopping list was not found")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ARCHIVED_LIST_NOT_FOUND,
+                    "archived shopping list was not found",
+                )
 
             archived_list = await unit_of_work.shopping_lists.get_archived_by_owner(
                 list_id=command.archived_list_id,
                 owner_user_id=user.id,
             )
             if archived_list is None:
-                raise ValueError("archived shopping list was not found")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ARCHIVED_LIST_NOT_FOUND,
+                    "archived shopping list was not found",
+                )
 
             source_items = await unit_of_work.shopping_items.list_by_list_id(
                 archived_list.id,
@@ -181,7 +194,10 @@ def _select_items_to_restore(
         item_id for item_id in selected_item_ids if item_id not in items_by_id
     ]
     if missing_item_ids:
-        raise ValueError("selected archived item does not belong to archived list")
+        raise ApplicationError(
+            ApplicationErrorCodeEnum.SELECTED_ARCHIVED_ITEM_NOT_IN_LIST,
+            "selected archived item does not belong to archived list",
+        )
 
     selected_item_id_set = set(selected_item_ids)
     return [item for item in ordered_items if item.id in selected_item_id_set]

@@ -13,6 +13,7 @@ def main_menu_keyboard() -> ReplyKeyboardMarkup:
                 KeyboardButton(text=ButtonTextEnum.START_SHOPPING),
             ],
             [
+                KeyboardButton(text=ButtonTextEnum.FINISH_SHOPPING),
                 KeyboardButton(text=ButtonTextEnum.ARCHIVE),
             ],
         ],

@@ -34,9 +34,6 @@ from app.presentation.bot.keyboards.main import main_menu_keyboard
 
 MENU_BUTTON_TEXTS = (
     ButtonTextEnum.SHOW_LIST,
-    ButtonTextEnum.START_SHOPPING,
-    ButtonTextEnum.FINISH_SHOPPING,
-    ButtonTextEnum.ARCHIVE,
     ButtonTextEnum.RESTORE_ALL,
     ButtonTextEnum.RESTORE_SELECTED,
     ButtonTextEnum.BACK,

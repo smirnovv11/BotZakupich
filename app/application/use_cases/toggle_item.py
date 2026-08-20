@@ -3,6 +3,7 @@
 from collections.abc import Callable
 
 from app.application.dto import ToggleItemCommand, ToggleItemResult
+from app.application.errors import ApplicationError, ApplicationErrorCodeEnum
 from app.application.ports.unit_of_work import UnitOfWork
 from app.domain.enums import ShoppingItemStatusEnum, ShoppingListStatusEnum
 
@@ -17,7 +18,10 @@ class ToggleItemUseCase:
                 command.telegram_user_id,
             )
             if user is None:
-                raise ValueError("user does not have an active shopping list")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ACTIVE_LIST_NOT_FOUND,
+                    "user does not have an active shopping list",
+                )
 
             shopping_list = await unit_of_work.shopping_lists.get_current_by_owner(
                 user.id,
@@ -26,14 +30,23 @@ class ToggleItemUseCase:
                 shopping_list is None
                 or shopping_list.status != ShoppingListStatusEnum.SHOPPING
             ):
-                raise ValueError("user does not have an active shopping list")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ACTIVE_LIST_NOT_FOUND,
+                    "user does not have an active shopping list",
+                )
 
             item = await unit_of_work.shopping_items.get_by_id(command.item_id)
             if item is None:
-                raise ValueError(f"shopping item not found: {command.item_id}")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ITEM_NOT_FOUND,
+                    f"shopping item not found: {command.item_id}",
+                )
 
             if item.list_id != shopping_list.id:
-                raise ValueError("shopping item does not belong to active list")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.ITEM_OUTSIDE_ACTIVE_LIST,
+                    "shopping item does not belong to active list",
+                )
 
             if item.status == ShoppingItemStatusEnum.PENDING:
                 item = await unit_of_work.shopping_items.update_status(
@@ -50,7 +63,10 @@ class ToggleItemUseCase:
                     bought_by_user_id=None,
                 )
             else:
-                raise ValueError(f"unsupported shopping item status: {item.status}")
+                raise ApplicationError(
+                    ApplicationErrorCodeEnum.UNSUPPORTED_ITEM_STATUS,
+                    f"unsupported shopping item status: {item.status}",
+                )
 
             return ToggleItemResult(
                 item_id=item.id,

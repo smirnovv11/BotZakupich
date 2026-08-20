@@ -12,4 +12,9 @@ def test_app_main_import_does_not_load_runtime_settings() -> None:
 
 def test_bot_router_includes_start_router() -> None:
     assert bot_router.name == "bot"
-    assert [router.name for router in bot_router.sub_routers] == ["start", "items"]
+    assert [router.name for router in bot_router.sub_routers] == [
+        "start",
+        "shopping",
+        "archive",
+        "items",
+    ]

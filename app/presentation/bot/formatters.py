@@ -2,9 +2,15 @@
 
 from app.application.dto import (
     AddItemsResult,
+    ArchivedListDTO,
     CurrentListDTO,
+    FinishShoppingResult,
+    ListArchivesResult,
     ListItemDTO,
+    RestoreArchivedItemsResult,
+    StartShoppingResult,
 )
+from app.application.errors import ApplicationError, ApplicationErrorCodeEnum
 from app.domain.enums import CategoryCodeEnum, ShoppingItemStatusEnum
 
 EMPTY_ADD_MESSAGE = (
@@ -18,6 +24,11 @@ CLEAR_CONFIRMATION_MESSAGE = (
 )
 CLEAR_CANCELLED_MESSAGE = "↩️ Очистку отменил."
 CLEAR_EMPTY_MESSAGE = "🧺 Текущего списка уже нет."
+INVALID_CHECKLIST_ACTION_MESSAGE = "Не получилось понять, какой товар отметить."
+INVALID_ARCHIVE_ACTION_MESSAGE = "Не получилось понять действие с архивом."
+SHOPPING_CHECKLIST_EMPTY_MESSAGE = "🧺 В чеклисте пока нет товаров."
+EMPTY_ARCHIVE_MESSAGE = "📦 Архив пока пуст."
+EMPTY_ARCHIVED_LIST_MESSAGE = "📦 В этом архивном походе нет товаров."
 
 CATEGORY_EMOJI_BY_CODE = {
     CategoryCodeEnum.DAIRY: "🥛",
@@ -92,6 +103,101 @@ def format_current_list(current_list: CurrentListDTO) -> str:
     return "\n".join(lines)
 
 
+def format_shopping_started(result: StartShoppingResult) -> str:
+    return f"🛒 Начали покупки. В чеклисте товаров: {result.item_count}."
+
+
+def format_checklist(current_list: CurrentListDTO) -> str:
+    if current_list.is_empty:
+        return SHOPPING_CHECKLIST_EMPTY_MESSAGE
+
+    lines = ["🛒 Чеклист покупок:"]
+    for category in current_list.categories:
+        lines.append("")
+        lines.append(
+            f"{_category_title(category.category_code, category.category_name_ru)}:",
+        )
+        for item in category.items:
+            lines.append(f"{_status_marker(item)} {item.display_text}")
+
+    return "\n".join(lines)
+
+
+def format_shopping_error(error: ValueError) -> str:
+    if isinstance(error, ApplicationError):
+        if error.code == ApplicationErrorCodeEnum.EMPTY_DRAFT_LIST:
+            return "🧺 Список пуст. Сначала отправьте товары обычным сообщением."
+        if error.code == ApplicationErrorCodeEnum.DRAFT_LIST_NOT_FOUND:
+            return "🧺 Нет списка для покупок. Отправьте товары обычным сообщением."
+        if error.code == ApplicationErrorCodeEnum.LIST_NOT_DRAFT:
+            return "🛒 Покупки уже начаты. Откройте чеклист и отмечайте товары."
+        if error.code == ApplicationErrorCodeEnum.ACTIVE_LIST_NOT_FOUND:
+            return "🧺 Сейчас нет активного чеклиста покупок."
+
+    return "Не получилось выполнить действие. Попробуйте открыть список еще раз."
+
+
+def format_finish_shopping_result(result: FinishShoppingResult) -> str:
+    archived_at = _format_datetime(result.archived_at)
+    return f"🏁 Покупки завершены. Поход сохранен в архив: {archived_at}."
+
+
+def format_archive_list(result: ListArchivesResult) -> str:
+    if not result.archives:
+        return EMPTY_ARCHIVE_MESSAGE
+
+    lines = ["📦 Архив покупок:"]
+    for index, archive in enumerate(result.archives, start=1):
+        archived_at = _format_datetime(archive.archived_at)
+        lines.append(
+            f"{index}. {archived_at} — товаров: {archive.item_count}",
+        )
+
+    return "\n".join(lines)
+
+
+def format_archived_list(archived_list: ArchivedListDTO) -> str:
+    if archived_list.is_empty:
+        return EMPTY_ARCHIVED_LIST_MESSAGE
+
+    archived_at = _format_datetime(archived_list.archived_at)
+    lines = [f"📦 Архивный поход от {archived_at}:"]
+    for category in archived_list.categories:
+        lines.append("")
+        lines.append(
+            f"{_category_title(category.category_code, category.category_name_ru)}:",
+        )
+        for item in category.items:
+            lines.append(f"{_status_marker(item)} {item.display_text}")
+
+    return "\n".join(lines)
+
+
+def format_restore_result(result: RestoreArchivedItemsResult) -> str:
+    restored_count = len(result.restored_items)
+    if restored_count == 0:
+        return "♻️ В архиве не нашел товаров для добавления."
+    if restored_count == 1:
+        item = result.restored_items[0]
+        return f"♻️ Добавил из архива: {item.display_text}."
+
+    return f"♻️ Добавил из архива товаров: {restored_count}."
+
+
+def format_archive_error(error: ValueError) -> str:
+    if isinstance(error, ApplicationError):
+        if error.code == ApplicationErrorCodeEnum.ACTIVE_LIST_NOT_FOUND:
+            return "🧺 Сейчас нет активного чеклиста покупок."
+        if error.code == ApplicationErrorCodeEnum.ARCHIVED_LIST_NOT_FOUND:
+            return "📦 Не нашел этот архивный поход."
+        if error.code == ApplicationErrorCodeEnum.SELECTED_ARCHIVED_ITEM_NOT_IN_LIST:
+            return "📦 Этот товар не относится к выбранному архивному походу."
+
+    return (
+        "Не получилось выполнить действие с архивом. Попробуйте открыть архив еще раз."
+    )
+
+
 def _status_marker(item: ListItemDTO) -> str:
     if item.status == ShoppingItemStatusEnum.BOUGHT:
         return "✅"
@@ -104,3 +210,7 @@ def _category_title(category_code: str, category_name_ru: str) -> str:
         CATEGORY_EMOJI_BY_CODE[CategoryCodeEnum.OTHER],
     )
     return f"{emoji} {category_name_ru}"
+
+
+def _format_datetime(value) -> str:
+    return value.strftime("%d.%m.%Y %H:%M")

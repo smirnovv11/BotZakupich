@@ -7,7 +7,7 @@ def test_main_menu_keyboard_uses_expected_button_texts() -> None:
 
     assert [[button.text for button in row] for row in keyboard.keyboard] == [
         [ButtonTextEnum.SHOW_LIST, ButtonTextEnum.START_SHOPPING],
-        [ButtonTextEnum.ARCHIVE],
+        [ButtonTextEnum.FINISH_SHOPPING, ButtonTextEnum.ARCHIVE],
     ]
 
 
