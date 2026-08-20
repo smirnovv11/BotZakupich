@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import ShoppingItemStatusEnum, ShoppingListStatusEnum
@@ -164,6 +165,55 @@ class SqlAlchemyInputMessageRepository:
         self.session.add(input_message)
         await self.session.flush()
         return input_message
+
+    async def get_or_create_by_telegram_message(
+        self,
+        *,
+        user_id: int,
+        telegram_chat_id: int,
+        telegram_message_id: int,
+        raw_text: str,
+        parser_source: str,
+        received_at: datetime,
+        parser_version: str | None = None,
+        parser_metadata: dict[str, object] | None = None,
+    ) -> tuple[InputMessage, bool]:
+        statement = (
+            insert(InputMessage)
+            .values(
+                user_id=user_id,
+                telegram_chat_id=telegram_chat_id,
+                telegram_message_id=telegram_message_id,
+                raw_text=raw_text,
+                parser_source=parser_source,
+                parser_version=parser_version,
+                parser_metadata=parser_metadata,
+                received_at=received_at,
+            )
+            .on_conflict_do_nothing(
+                index_elements=[
+                    InputMessage.telegram_chat_id,
+                    InputMessage.telegram_message_id,
+                ],
+            )
+            .returning(InputMessage.id)
+        )
+        input_message_id = await self.session.scalar(statement)
+
+        if input_message_id is not None:
+            input_message = await self.session.get(InputMessage, input_message_id)
+            if input_message is None:
+                raise ValueError(f"input message not found: {input_message_id}")
+            return input_message, True
+
+        input_message = await self.get_by_telegram_message(
+            telegram_chat_id=telegram_chat_id,
+            telegram_message_id=telegram_message_id,
+        )
+        if input_message is None:
+            raise ValueError("input message conflict row was not found")
+
+        return input_message, False
 
 
 class SqlAlchemyShoppingItemRepository:

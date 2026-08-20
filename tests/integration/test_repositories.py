@@ -94,6 +94,44 @@ async def test_input_message_unique_constraint_is_enforced(db_session) -> None:
 
 
 @pytest.mark.asyncio
+async def test_input_message_get_or_create_is_idempotent(db_session) -> None:
+    users = SqlAlchemyUserRepository(db_session)
+    input_messages = SqlAlchemyInputMessageRepository(db_session)
+    user = await users.create_or_update_from_telegram(telegram_user_id=1005)
+
+    (
+        created_message,
+        was_created,
+    ) = await input_messages.get_or_create_by_telegram_message(
+        user_id=user.id,
+        telegram_chat_id=2005,
+        telegram_message_id=3005,
+        raw_text="молоко",
+        parser_source=ParserSourceEnum.LOCAL,
+        parser_version="test-v1",
+        received_at=datetime(2026, 8, 20, tzinfo=UTC),
+    )
+    (
+        existing_message,
+        was_created_again,
+    ) = await input_messages.get_or_create_by_telegram_message(
+        user_id=user.id,
+        telegram_chat_id=2005,
+        telegram_message_id=3005,
+        raw_text="хлеб",
+        parser_source=ParserSourceEnum.LOCAL,
+        parser_version="test-v2",
+        received_at=datetime(2026, 8, 20, tzinfo=UTC),
+    )
+
+    assert was_created is True
+    assert was_created_again is False
+    assert existing_message.id == created_message.id
+    assert existing_message.raw_text == "молоко"
+    assert existing_message.parser_version == "test-v1"
+
+
+@pytest.mark.asyncio
 async def test_current_list_lookup_ignores_archived_lists(db_session) -> None:
     users = SqlAlchemyUserRepository(db_session)
     lists = SqlAlchemyShoppingListRepository(db_session)
