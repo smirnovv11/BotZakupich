@@ -17,8 +17,10 @@ from app.core.config import Settings
 from app.core.constants import BotCommandEnum, ButtonTextEnum, CallbackPrefixEnum
 from app.presentation.bot.callbacks import (
     is_confirm_delete_selected_items_callback,
+    is_edit_delete_page_callback,
     is_toggle_delete_item_callback,
     parse_confirm_delete_selected_items_callback,
+    parse_edit_delete_page_callback,
     parse_toggle_delete_item_callback,
 )
 from app.presentation.bot.dependencies import (
@@ -45,6 +47,11 @@ from app.presentation.bot.keyboards.list_actions import (
     delete_items_keyboard,
 )
 from app.presentation.bot.keyboards.main import main_menu_keyboard
+from app.presentation.bot.pagination import (
+    build_checklist_pages,
+    clamp_page_index,
+    get_checklist_page,
+)
 
 MENU_BUTTON_TEXTS = (
     ButtonTextEnum.SHOW_LIST,
@@ -221,14 +228,16 @@ async def handle_toggle_delete_item_callback(
         )
         return
 
-    item_id, selected_item_ids = parsed_callback
+    item_id, page_index, selected_item_mask = parsed_callback
     current_list = await _get_current_list(session_factory, callback.from_user.id)
     current_item_ids = _current_item_ids(current_list)
     if item_id not in current_item_ids:
         await callback.answer(DELETE_SELECTION_ITEM_MISSING_MESSAGE, show_alert=True)
         return
 
-    selected_ids = set(selected_item_ids).intersection(current_item_ids)
+    selected_ids = set(
+        _selected_item_ids_from_page_mask(current_list, page_index, selected_item_mask),
+    )
     if item_id in selected_ids:
         selected_ids.remove(item_id)
     else:
@@ -241,8 +250,13 @@ async def handle_toggle_delete_item_callback(
             format_delete_selection(
                 current_list,
                 selected_count=len(updated_selected_ids),
+                page_index=page_index,
             ),
-            reply_markup=delete_items_keyboard(current_list, updated_selected_ids),
+            reply_markup=delete_items_keyboard(
+                current_list,
+                updated_selected_ids,
+                page_index,
+            ),
         )
 
 
@@ -253,11 +267,21 @@ async def handle_delete_selected_items_confirm(
     callback: CallbackQuery,
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
-    selected_item_ids = parse_confirm_delete_selected_items_callback(callback.data)
-    if selected_item_ids is None:
+    parsed_callback = parse_confirm_delete_selected_items_callback(callback.data)
+    if parsed_callback is None:
         await callback.answer("Не получилось понять, что удалить.", show_alert=True)
         return
 
+    page_index, selected_item_mask = parsed_callback
+    current_list_before_delete = await _get_current_list(
+        session_factory,
+        callback.from_user.id,
+    )
+    selected_item_ids = _selected_item_ids_from_page_mask(
+        current_list_before_delete,
+        page_index,
+        selected_item_mask,
+    )
     if not selected_item_ids:
         await callback.answer(DELETE_SELECTION_EMPTY_MESSAGE, show_alert=True)
         return
@@ -270,13 +294,55 @@ async def handle_delete_selected_items_confirm(
         ),
     )
     current_list = await _get_current_list(session_factory, callback.from_user.id)
+    page_count = len(build_checklist_pages(current_list.categories))
+    next_page_index = clamp_page_index(page_index, page_count)
 
     await callback.answer(format_delete_selected_result(result.deleted_item_count))
     if isinstance(callback.message, Message):
+        if current_list.is_empty:
+            await callback.message.edit_text(
+                format_current_list(current_list),
+                reply_markup=None,
+            )
+            return
+
         await callback.message.edit_text(
-            format_current_list(current_list),
-            reply_markup=(
-                None if current_list.is_empty else current_list_actions_keyboard()
+            format_delete_selection(
+                current_list,
+                selected_count=0,
+                page_index=next_page_index,
+            ),
+            reply_markup=delete_items_keyboard(current_list, (), next_page_index),
+        )
+
+
+@items_router.callback_query(
+    lambda callback: is_edit_delete_page_callback(callback.data),
+)
+async def handle_edit_delete_page_callback(
+    callback: CallbackQuery,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    parsed_callback = parse_edit_delete_page_callback(callback.data)
+    if parsed_callback is None:
+        await callback.answer("Не получилось открыть страницу.", show_alert=True)
+        return
+
+    page_index = parsed_callback
+    current_list = await _get_current_list(session_factory, callback.from_user.id)
+
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.edit_text(
+            format_delete_selection(
+                current_list,
+                selected_count=0,
+                page_index=page_index,
+            ),
+            reply_markup=delete_items_keyboard(
+                current_list,
+                (),
+                page_index,
             ),
         )
 
@@ -327,6 +393,22 @@ def _current_item_ids(current_list: CurrentListDTO) -> set[int]:
     return {
         item.item_id for category in current_list.categories for item in category.items
     }
+
+
+def _selected_item_ids_from_page_mask(
+    current_list: CurrentListDTO,
+    page_index: int,
+    selected_item_mask: int,
+) -> tuple[int, ...]:
+    page = get_checklist_page(current_list.categories, page_index)
+    if page is None:
+        return ()
+
+    return tuple(
+        item.item_id
+        for index, item in enumerate(page.items)
+        if selected_item_mask & (1 << index)
+    )
 
 
 def is_command_text(text: str) -> bool:

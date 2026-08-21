@@ -92,3 +92,39 @@ def test_archived_list_keyboard_has_restore_all_and_restore_item_buttons() -> No
         [f"{CallbackPrefixEnum.RESTORE_ARCHIVED_ITEM}:11:101"],
         [f"{CallbackPrefixEnum.RESTORE_ARCHIVED_ITEM}:11:102"],
     ]
+
+
+def test_archived_list_keyboard_paginates_restore_item_buttons() -> None:
+    keyboard = archived_list_keyboard(
+        ArchivedListDTO(
+            list_id=11,
+            list_status="archived",
+            title=None,
+            archived_at=datetime(2026, 8, 20, 12, 0, tzinfo=UTC),
+            categories=(
+                ListCategoryDTO(
+                    category_code=CategoryCodeEnum.DAIRY,
+                    category_name_ru="Молочные продукты",
+                    sort_order=10,
+                    items=tuple(
+                        ListItemDTO(
+                            item_id=item_id,
+                            display_text=f"товар {item_id}",
+                            status=ShoppingItemStatusEnum.PENDING,
+                            position=item_id,
+                        )
+                        for item_id in range(101, 113)
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    assert len(keyboard.inline_keyboard) == 12
+    assert keyboard.inline_keyboard[0][0].text == ButtonTextEnum.RESTORE_ALL
+    assert keyboard.inline_keyboard[1][0].text == "♻️ товар 101"
+    assert keyboard.inline_keyboard[10][0].text == "♻️ товар 110"
+    assert keyboard.inline_keyboard[11][0].text == ButtonTextEnum.NEXT_PAGE
+    assert keyboard.inline_keyboard[11][0].callback_data == (
+        f"{CallbackPrefixEnum.ARCHIVED_RESTORE_PAGE}:11:1"
+    )

@@ -13,9 +13,11 @@ from app.application.dto import (
 )
 from app.core.constants import BotCommandEnum, ButtonTextEnum
 from app.presentation.bot.callbacks import (
+    is_archived_restore_page_callback,
     is_open_archived_list_callback,
     is_restore_archived_item_callback,
     is_restore_archived_list_callback,
+    parse_archived_restore_page_callback,
     parse_open_archived_list_callback,
     parse_restore_archived_item_callback,
     parse_restore_archived_list_callback,
@@ -30,7 +32,7 @@ from app.presentation.bot.formatters import (
     INVALID_ARCHIVE_ACTION_MESSAGE,
     format_archive_error,
     format_archive_list,
-    format_archived_list,
+    format_archived_list_page,
     format_finish_shopping_result,
     format_restore_result,
 )
@@ -115,8 +117,41 @@ async def handle_open_archived_list_callback(
     await callback.answer("📦 Открыл архив.")
     if isinstance(callback.message, Message):
         await callback.message.answer(
-            format_archived_list(archived_list),
+            format_archived_list_page(archived_list),
             reply_markup=archived_list_keyboard(archived_list),
+        )
+
+
+@archive_router.callback_query(
+    lambda callback: is_archived_restore_page_callback(callback.data),
+)
+async def handle_archived_restore_page_callback(
+    callback: CallbackQuery,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    parsed_callback = parse_archived_restore_page_callback(callback.data)
+    if parsed_callback is None:
+        await callback.answer(INVALID_ARCHIVE_ACTION_MESSAGE, show_alert=True)
+        return
+
+    archived_list_id, page_index = parsed_callback
+    use_case = make_get_archived_list_use_case(session_factory)
+    try:
+        archived_list = await use_case.execute(
+            GetArchivedListQuery(
+                telegram_user_id=callback.from_user.id,
+                archived_list_id=archived_list_id,
+            ),
+        )
+    except ValueError as error:
+        await callback.answer(format_archive_error(error), show_alert=True)
+        return
+
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.edit_text(
+            format_archived_list_page(archived_list, page_index),
+            reply_markup=archived_list_keyboard(archived_list, page_index),
         )
 
 

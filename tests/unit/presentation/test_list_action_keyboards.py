@@ -57,17 +57,54 @@ def test_delete_items_keyboard_marks_selected_items() -> None:
         [ButtonTextEnum.BACK],
     ]
     assert keyboard.inline_keyboard[0][0].callback_data == (
-        f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:11:12"
+        f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:11:0:2"
     )
     assert keyboard.inline_keyboard[1][0].callback_data == (
-        f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:12:12"
+        f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:12:0:2"
     )
     assert keyboard.inline_keyboard[2][0].callback_data == (
-        f"{CallbackPrefixEnum.CONFIRM_DELETE_SELECTED_ITEMS}:12"
+        f"{CallbackPrefixEnum.CONFIRM_DELETE_SELECTED_ITEMS}:0:2"
     )
     assert (
         keyboard.inline_keyboard[3][0].callback_data
         == CallbackPrefixEnum.CANCEL_EDIT_LIST
+    )
+
+
+def test_delete_items_keyboard_paginates_and_preserves_selected_ids() -> None:
+    keyboard = delete_items_keyboard(
+        CurrentListDTO(
+            list_id=1,
+            list_status="draft",
+            title=None,
+            categories=(
+                ListCategoryDTO(
+                    category_code=CategoryCodeEnum.DAIRY,
+                    category_name_ru="Молочные продукты",
+                    sort_order=10,
+                    items=tuple(
+                        ListItemDTO(
+                            item_id=item_id,
+                            display_text=f"товар {item_id}",
+                            status=ShoppingItemStatusEnum.PENDING,
+                            position=item_id,
+                        )
+                        for item_id in range(1, 13)
+                    ),
+                ),
+            ),
+        ),
+        selected_item_ids=(2, 11),
+    )
+
+    assert len(keyboard.inline_keyboard) == 13
+    assert keyboard.inline_keyboard[1][0].text == "☑️ товар 2"
+    assert keyboard.inline_keyboard[10][0].text == ButtonTextEnum.NEXT_PAGE
+    assert keyboard.inline_keyboard[10][0].callback_data == (
+        f"{CallbackPrefixEnum.EDIT_DELETE_PAGE}:1"
+    )
+    assert keyboard.inline_keyboard[11][0].callback_data == (
+        f"{CallbackPrefixEnum.CONFIRM_DELETE_SELECTED_ITEMS}:0:2"
     )
 
 

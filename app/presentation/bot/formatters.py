@@ -12,6 +12,7 @@ from app.application.dto import (
 )
 from app.application.errors import ApplicationError, ApplicationErrorCodeEnum
 from app.domain.enums import CategoryCodeEnum, ShoppingItemStatusEnum
+from app.presentation.bot.pagination import ChecklistPage, get_checklist_page
 
 EMPTY_ADD_MESSAGE = (
     "🤔 Не нашел товаров для добавления. "
@@ -62,14 +63,21 @@ def format_clear_result(deleted_item_count: int) -> str:
     return f"✨ Список очищен. Удалено товаров: {deleted_item_count}."
 
 
-def format_delete_selection(current_list: CurrentListDTO, selected_count: int) -> str:
+def format_delete_selection(
+    current_list: CurrentListDTO,
+    selected_count: int,
+    page_index: int = 0,
+) -> str:
     if current_list.is_empty:
         return EMPTY_LIST_MESSAGE
 
     lines = [
         "✏️ Выберите товары для удаления",
-        "Нажимайте на товары, затем подтвердите удаление.",
     ]
+    page = get_checklist_page(current_list.categories, page_index)
+    if page is not None:
+        lines.append(_format_page_title(page))
+    lines.append("Нажимайте на товары, затем подтвердите удаление.")
     if selected_count:
         lines.append(f"Выбрано: {selected_count}.")
 
@@ -146,6 +154,24 @@ def format_checklist(current_list: CurrentListDTO) -> str:
     return "\n".join(lines)
 
 
+def format_checklist_page(current_list: CurrentListDTO, page_index: int = 0) -> str:
+    if current_list.is_empty:
+        return SHOPPING_CHECKLIST_EMPTY_MESSAGE
+
+    page = get_checklist_page(current_list.categories, page_index)
+    if page is None:
+        return SHOPPING_CHECKLIST_EMPTY_MESSAGE
+
+    lines = [
+        "🛒 Чеклист покупок",
+        _format_page_title(page),
+    ]
+    for item in page.items:
+        lines.append(f"{_status_marker(item)} {item.display_text}")
+
+    return "\n".join(lines)
+
+
 def format_shopping_error(error: ValueError) -> str:
     if isinstance(error, ApplicationError):
         if error.code == ApplicationErrorCodeEnum.EMPTY_DRAFT_LIST:
@@ -196,6 +222,28 @@ def format_archived_list(archived_list: ArchivedListDTO) -> str:
     return "\n".join(lines)
 
 
+def format_archived_list_page(
+    archived_list: ArchivedListDTO,
+    page_index: int = 0,
+) -> str:
+    if archived_list.is_empty:
+        return EMPTY_ARCHIVED_LIST_MESSAGE
+
+    page = get_checklist_page(archived_list.categories, page_index)
+    if page is None:
+        return EMPTY_ARCHIVED_LIST_MESSAGE
+
+    archived_at = _format_datetime(archived_list.archived_at)
+    lines = [
+        f"📦 Архивный поход от {archived_at}",
+        _format_page_title(page),
+    ]
+    for item in page.items:
+        lines.append(f"{_status_marker(item)} {item.display_text}")
+
+    return "\n".join(lines)
+
+
 def format_restore_result(result: RestoreArchivedItemsResult) -> str:
     restored_count = len(result.restored_items)
     if restored_count == 0:
@@ -233,6 +281,13 @@ def _category_title(category_code: str, category_name_ru: str) -> str:
         CATEGORY_EMOJI_BY_CODE[CategoryCodeEnum.OTHER],
     )
     return f"{emoji} {category_name_ru}"
+
+
+def _format_page_title(page: ChecklistPage) -> str:
+    return (
+        f"{_category_title(page.category_code, page.category_name_ru)} · "
+        f"{page.page_index + 1}/{page.total_pages}"
+    )
 
 
 def _format_datetime(value) -> str:

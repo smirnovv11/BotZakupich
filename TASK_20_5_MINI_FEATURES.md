@@ -58,7 +58,7 @@ Technical notes:
 - Pagination и callback data должны жить в presentation layer: callback builders/parsers и keyboard builders.
 - Use cases не должны знать про страницы Telegram UI.
 - Callback values, prefixes, button text, page size и mode strings вынести в `*Enum` / constants.
-- Не добавлять Redis/FSM; selection state должен быть encoded in callback data или восстановим из текущего списка/сообщения без внешнего state. Если callback data станет слишком длинной, выбрать минимальный server-side подход только после отдельного решения.
+- Не добавлять Redis/FSM в MVP. В edit/delete checklist selection действует только в пределах текущей страницы и кодируется компактной page-local bitmask, чтобы не превышать Telegram `callback_data` limit.
 
 ### 3. Расширение локального categorizer/parser vocabulary
 
@@ -100,6 +100,7 @@ Technical notes:
 
 - При просмотре текущего списка есть кнопка `Удалить`.
 - Пользователь может выбрать товары в inline checklist и удалить выбранные из текущего списка.
+- В MVP выбор товаров для удаления page-local: при переходе на другую страницу выбор сбрасывается.
 - Удаление не затрагивает archived trips.
 - Shopping checklist paginated по категориям и не показывает больше 10 товаров на странице.
 - Edit/delete checklist paginated по тем же правилам.
@@ -107,6 +108,10 @@ Technical notes:
 - Товары `кола`, `чипсы`, `сливки`, `мясо`, `курица`, `свинина`, `бедра`, `голень` распознаются локально.
 - MVP не содержит OpenAI/AI runtime calls.
 - `list_members`, shared lists, Redis/FSM не добавлены.
+
+## Future improvements
+
+- Когда будет принято отдельное решение добавить Redis, заменить page-local delete selection на server-side temporary selection: хранить `selection_token -> selected_item_ids` в Redis с коротким TTL, а в Telegram `callback_data` передавать только compact token/page/action. Это позволит выбирать товары на разных страницах и удалять их одним подтверждением без риска превысить лимит Telegram callback data.
 
 ## Verification
 
