@@ -9,6 +9,9 @@ from app.application.use_cases.archive import (
     RestoreArchivedItemsUseCase,
 )
 from app.application.use_cases.clear_current_list import ClearCurrentListUseCase
+from app.application.use_cases.delete_current_list_items import (
+    DeleteCurrentListItemsUseCase,
+)
 from app.application.use_cases.finish_shopping import FinishShoppingUseCase
 from app.application.use_cases.get_current_list import GetCurrentListUseCase
 from app.application.use_cases.start_shopping import StartShoppingUseCase
@@ -39,6 +42,14 @@ def make_clear_current_list_use_case(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> ClearCurrentListUseCase:
     return ClearCurrentListUseCase(
+        unit_of_work_factory=lambda: SqlAlchemyUnitOfWork(session_factory),
+    )
+
+
+def make_delete_current_list_items_use_case(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> DeleteCurrentListItemsUseCase:
+    return DeleteCurrentListItemsUseCase(
         unit_of_work_factory=lambda: SqlAlchemyUnitOfWork(session_factory),
     )
 

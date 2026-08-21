@@ -24,6 +24,8 @@ CLEAR_CONFIRMATION_MESSAGE = (
 )
 CLEAR_CANCELLED_MESSAGE = "↩️ Очистку отменил."
 CLEAR_EMPTY_MESSAGE = "🧺 Текущего списка уже нет."
+DELETE_SELECTION_EMPTY_MESSAGE = "Выберите хотя бы один товар."
+DELETE_SELECTION_ITEM_MISSING_MESSAGE = "Этот товар уже не в текущем списке."
 INVALID_CHECKLIST_ACTION_MESSAGE = "Не получилось понять, какой товар отметить."
 INVALID_ARCHIVE_ACTION_MESSAGE = "Не получилось понять действие с архивом."
 SHOPPING_CHECKLIST_EMPTY_MESSAGE = "🧺 В чеклисте пока нет товаров."
@@ -58,6 +60,27 @@ def format_clear_result(deleted_item_count: int) -> str:
         return "✨ Список очищен. Товаров в нем не было."
 
     return f"✨ Список очищен. Удалено товаров: {deleted_item_count}."
+
+
+def format_delete_selection(current_list: CurrentListDTO, selected_count: int) -> str:
+    if current_list.is_empty:
+        return EMPTY_LIST_MESSAGE
+
+    lines = [
+        "✏️ Выберите товары для удаления",
+        "Нажимайте на товары, затем подтвердите удаление.",
+    ]
+    if selected_count:
+        lines.append(f"Выбрано: {selected_count}.")
+
+    return "\n".join(lines)
+
+
+def format_delete_selected_result(deleted_item_count: int) -> str:
+    if deleted_item_count == 0:
+        return "🗑️ Ничего не удалил."
+
+    return f"🗑️ Удалил товаров: {deleted_item_count}."
 
 
 def format_added_items(result: AddItemsResult) -> str:

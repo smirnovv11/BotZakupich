@@ -123,3 +123,10 @@ class ShoppingItemRepository(Protocol):
         bought_at: datetime | None = None,
         bought_by_user_id: int | None = None,
     ) -> Any: ...
+
+    async def delete_by_list_id_and_ids(
+        self,
+        *,
+        list_id: int,
+        item_ids: tuple[int, ...],
+    ) -> int: ...

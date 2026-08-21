@@ -31,6 +31,8 @@ from app.presentation.bot.formatters import (
     format_checklist,
     format_clear_result,
     format_current_list,
+    format_delete_selected_result,
+    format_delete_selection,
     format_finish_shopping_result,
     format_restore_result,
     format_shopping_error,
@@ -468,3 +470,37 @@ def test_format_clear_result_with_deleted_items_count() -> None:
 
 def test_format_clear_result_with_empty_list() -> None:
     assert format_clear_result(0) == "✨ Список очищен. Товаров в нем не было."
+
+
+def test_format_delete_selection() -> None:
+    current_list = CurrentListDTO(
+        list_id=1,
+        list_status="draft",
+        title=None,
+        categories=(
+            ListCategoryDTO(
+                category_code=CategoryCodeEnum.DAIRY,
+                category_name_ru="Молочные продукты",
+                sort_order=10,
+                items=(
+                    ListItemDTO(
+                        item_id=1,
+                        display_text="молоко",
+                        status=ShoppingItemStatusEnum.PENDING,
+                        position=1,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    assert format_delete_selection(current_list, selected_count=2) == (
+        "✏️ Выберите товары для удаления\n"
+        "Нажимайте на товары, затем подтвердите удаление.\n"
+        "Выбрано: 2."
+    )
+
+
+def test_format_delete_selected_result() -> None:
+    assert format_delete_selected_result(2) == "🗑️ Удалил товаров: 2."
+    assert format_delete_selected_result(0) == "🗑️ Ничего не удалил."

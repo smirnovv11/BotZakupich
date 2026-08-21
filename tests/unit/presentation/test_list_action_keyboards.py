@@ -1,16 +1,74 @@
+from app.application.dto import CurrentListDTO, ListCategoryDTO, ListItemDTO
 from app.core.constants import ButtonTextEnum, CallbackPrefixEnum
+from app.domain.enums import CategoryCodeEnum, ShoppingItemStatusEnum
 from app.presentation.bot.keyboards.list_actions import (
     clear_list_confirmation_keyboard,
     current_list_actions_keyboard,
+    delete_items_keyboard,
 )
 
 
-def test_current_list_actions_keyboard_has_clear_button() -> None:
+def test_current_list_actions_keyboard_has_edit_and_clear_buttons() -> None:
     keyboard = current_list_actions_keyboard()
-    button = keyboard.inline_keyboard[0][0]
+    edit_button = keyboard.inline_keyboard[0][0]
+    clear_button = keyboard.inline_keyboard[1][0]
 
-    assert button.text == ButtonTextEnum.CLEAR_LIST
-    assert button.callback_data == CallbackPrefixEnum.CLEAR_LIST
+    assert edit_button.text == ButtonTextEnum.EDIT_LIST
+    assert edit_button.callback_data == CallbackPrefixEnum.EDIT_LIST
+    assert clear_button.text == ButtonTextEnum.CLEAR_LIST
+    assert clear_button.callback_data == CallbackPrefixEnum.CLEAR_LIST
+
+
+def test_delete_items_keyboard_marks_selected_items() -> None:
+    keyboard = delete_items_keyboard(
+        CurrentListDTO(
+            list_id=1,
+            list_status="draft",
+            title=None,
+            categories=(
+                ListCategoryDTO(
+                    category_code=CategoryCodeEnum.DAIRY,
+                    category_name_ru="Молочные продукты",
+                    sort_order=10,
+                    items=(
+                        ListItemDTO(
+                            item_id=11,
+                            display_text="молоко",
+                            status=ShoppingItemStatusEnum.PENDING,
+                            position=1,
+                        ),
+                        ListItemDTO(
+                            item_id=12,
+                            display_text="сливки",
+                            status=ShoppingItemStatusEnum.PENDING,
+                            position=2,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        selected_item_ids=(12,),
+    )
+
+    assert [[button.text for button in row] for row in keyboard.inline_keyboard] == [
+        ["☐ молоко"],
+        ["☑️ сливки"],
+        [ButtonTextEnum.DELETE_SELECTED],
+        [ButtonTextEnum.BACK],
+    ]
+    assert keyboard.inline_keyboard[0][0].callback_data == (
+        f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:11:12"
+    )
+    assert keyboard.inline_keyboard[1][0].callback_data == (
+        f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:12:12"
+    )
+    assert keyboard.inline_keyboard[2][0].callback_data == (
+        f"{CallbackPrefixEnum.CONFIRM_DELETE_SELECTED_ITEMS}:12"
+    )
+    assert (
+        keyboard.inline_keyboard[3][0].callback_data
+        == CallbackPrefixEnum.CANCEL_EDIT_LIST
+    )
 
 
 def test_clear_list_confirmation_keyboard_has_confirm_and_cancel_buttons() -> None:
