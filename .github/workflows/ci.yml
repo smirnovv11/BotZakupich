@@ -78,17 +78,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t "${IMAGE_NAME}:latest" \
-            -t "${IMAGE_NAME}:${GITHUB_SHA}" \
-            .
-
-      - name: Push Docker image
-        run: |
-          docker push "${IMAGE_NAME}:latest"
-          docker push "${IMAGE_NAME}:${GITHUB_SHA}"
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          provenance: false
+          sbom: false
 
       - name: Trigger Northflank deployment
         env:

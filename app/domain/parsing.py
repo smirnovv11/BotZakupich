@@ -81,7 +81,7 @@ def normalize_display_text(raw_text: str) -> str:
 
 
 def normalize_product_key(raw_text: str) -> str:
-    product_key = normalize_display_text(raw_text).casefold()
+    product_key = normalize_display_text(raw_text).casefold().replace("ё", "е")
 
     return PRODUCT_KEY_ALIASES.get(product_key, product_key)
 

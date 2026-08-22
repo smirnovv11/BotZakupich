@@ -146,6 +146,43 @@ async def test_unknown_item_uses_default_other_category(
 
 
 @pytest.mark.asyncio
+async def test_household_dictionary_items_are_categorized_and_preserve_display_text(
+    db_session,
+    db_session_factory,
+) -> None:
+    result = await make_use_case(db_session_factory).execute(
+        make_command("кола, чипсы, сливки, курица, свинина, бедра, голень"),
+    )
+
+    items = (
+        await db_session.scalars(
+            select(ShoppingItem)
+            .where(ShoppingItem.list_id == result.list_id)
+            .order_by(ShoppingItem.position),
+        )
+    ).all()
+
+    assert [item.display_text for item in items] == [
+        "кола",
+        "чипсы",
+        "сливки",
+        "курица",
+        "свинина",
+        "бедра",
+        "голень",
+    ]
+    assert await get_item_categories(db_session, result.list_id) == [
+        CategoryCodeEnum.DRINKS,
+        CategoryCodeEnum.SWEETS_SNACKS,
+        CategoryCodeEnum.DAIRY,
+        CategoryCodeEnum.MEAT_POULTRY,
+        CategoryCodeEnum.MEAT_POULTRY,
+        CategoryCodeEnum.MEAT_POULTRY,
+        CategoryCodeEnum.MEAT_POULTRY,
+    ]
+
+
+@pytest.mark.asyncio
 async def test_message_while_shopping_adds_item_to_active_checklist(
     db_session,
     db_session_factory,

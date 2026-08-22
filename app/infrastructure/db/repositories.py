@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -314,3 +314,21 @@ class SqlAlchemyShoppingItemRepository:
 
         await self.session.flush()
         return shopping_item
+
+    async def delete_by_list_id_and_ids(
+        self,
+        *,
+        list_id: int,
+        item_ids: tuple[int, ...],
+    ) -> int:
+        if not item_ids:
+            return 0
+
+        result = await self.session.execute(
+            delete(ShoppingItem).where(
+                ShoppingItem.list_id == list_id,
+                ShoppingItem.id.in_(item_ids),
+            ),
+        )
+        await self.session.flush()
+        return result.rowcount or 0

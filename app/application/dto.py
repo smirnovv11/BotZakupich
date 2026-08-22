@@ -63,6 +63,18 @@ class ClearCurrentListResult:
 
 
 @dataclass(frozen=True, slots=True)
+class DeleteCurrentListItemsCommand:
+    telegram_user_id: int
+    item_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DeleteCurrentListItemsResult:
+    list_id: int | None
+    deleted_item_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class StartShoppingCommand:
     telegram_user_id: int
     started_at: datetime
