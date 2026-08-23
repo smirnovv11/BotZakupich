@@ -15,6 +15,7 @@ class ButtonTextEnum:
     DELETE_SELECTED = "🗑️ Удалить выбранное"
     CANCEL = "↩️ Отмена"
     BACK = "⬅️ Назад"
+    BACK_TO_LIST = "↩️ К списку"
     START_SHOPPING = "🛒 Начать покупки"
     FINISH_SHOPPING = "🏁 Завершить"
     ARCHIVE = "📦 Архив"

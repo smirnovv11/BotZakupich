@@ -92,7 +92,7 @@ def delete_items_keyboard(
             ],
             [
                 InlineKeyboardButton(
-                    text=ButtonTextEnum.BACK,
+                    text=ButtonTextEnum.BACK_TO_LIST,
                     callback_data=CallbackPrefixEnum.CANCEL_EDIT_LIST,
                 ),
             ],

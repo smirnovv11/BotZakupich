@@ -55,7 +55,7 @@ def test_delete_items_keyboard_marks_selected_items() -> None:
         ["☐ 🥛 молоко"],
         ["☑️ 🥛 сливки"],
         [ButtonTextEnum.DELETE_SELECTED],
-        [ButtonTextEnum.BACK],
+        [ButtonTextEnum.BACK_TO_LIST],
     ]
     assert keyboard.inline_keyboard[0][0].callback_data == (
         f"{CallbackPrefixEnum.TOGGLE_DELETE_ITEM}:11:0:2:"
