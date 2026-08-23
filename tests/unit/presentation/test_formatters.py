@@ -293,7 +293,51 @@ def test_format_checklist_page() -> None:
     )
 
     assert format_checklist_page(current_list) == (
-        "🛒 Чеклист покупок\n🥛 Молочные продукты · 1/1\n☐ молоко"
+        "🛒 Чеклист покупок\n\n🥛 Молочные продукты:\n☐ молоко"
+    )
+
+
+def test_format_checklist_page_groups_multiple_categories() -> None:
+    current_list = CurrentListDTO(
+        list_id=1,
+        list_status="shopping",
+        title=None,
+        categories=(
+            ListCategoryDTO(
+                category_code=CategoryCodeEnum.DAIRY,
+                category_name_ru="Молочные продукты",
+                sort_order=10,
+                items=(
+                    ListItemDTO(
+                        item_id=1,
+                        display_text="молоко",
+                        status=ShoppingItemStatusEnum.PENDING,
+                        position=1,
+                    ),
+                ),
+            ),
+            ListCategoryDTO(
+                category_code=CategoryCodeEnum.BAKERY,
+                category_name_ru="Хлеб и выпечка",
+                sort_order=20,
+                items=(
+                    ListItemDTO(
+                        item_id=2,
+                        display_text="хлеб",
+                        status=ShoppingItemStatusEnum.BOUGHT,
+                        position=2,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    assert format_checklist_page(current_list) == (
+        "🛒 Чеклист покупок\n"
+        "\n🥛 Молочные продукты:\n"
+        "☐ молоко\n"
+        "\n🥖 Хлеб и выпечка:\n"
+        "✅ хлеб"
     )
 
 
@@ -440,7 +484,7 @@ def test_format_archived_list_page() -> None:
     )
 
     assert format_archived_list_page(archived_list) == (
-        "📦 Архивный поход от 20.08.2026 14:00\n🥖 Хлеб и выпечка · 1/1\n☐ хлеб"
+        "📦 Архивный поход от 20.08.2026 14:00\n\n🥖 Хлеб и выпечка:\n☐ хлеб"
     )
 
 
@@ -553,9 +597,10 @@ def test_format_delete_selection() -> None:
 
     assert format_delete_selection(current_list, selected_count=2) == (
         "✏️ Выберите товары для удаления\n"
-        "🥛 Молочные продукты · 1/1\n"
         "Нажимайте на товары, затем подтвердите удаление.\n"
-        "Выбрано: 2."
+        "Выбрано: 2.\n"
+        "\n🥛 Молочные продукты:\n"
+        "☐ молоко"
     )
 
 

@@ -16,8 +16,10 @@ from app.application.dto import (
 from app.core.config import Settings
 from app.core.constants import BotCommandEnum, ButtonTextEnum, CallbackPrefixEnum
 from app.presentation.bot.callbacks import (
+    build_delete_page_fingerprint,
     is_confirm_delete_selected_items_callback,
     is_edit_delete_page_callback,
+    is_legacy_delete_selection_callback,
     is_toggle_delete_item_callback,
     parse_confirm_delete_selected_items_callback,
     parse_edit_delete_page_callback,
@@ -35,6 +37,7 @@ from app.presentation.bot.formatters import (
     CLEAR_EMPTY_MESSAGE,
     DELETE_SELECTION_EMPTY_MESSAGE,
     DELETE_SELECTION_ITEM_MISSING_MESSAGE,
+    DELETE_SELECTION_STALE_MESSAGE,
     format_added_items,
     format_clear_result,
     format_current_list,
@@ -228,8 +231,16 @@ async def handle_toggle_delete_item_callback(
         )
         return
 
-    item_id, page_index, selected_item_mask = parsed_callback
+    item_id, page_index, selected_item_mask, page_fingerprint = parsed_callback
     current_list = await _get_current_list(session_factory, callback.from_user.id)
+    if not _delete_page_matches_fingerprint(
+        current_list,
+        page_index,
+        page_fingerprint,
+    ):
+        await _show_stale_delete_selection(callback, current_list, page_index)
+        return
+
     current_item_ids = _current_item_ids(current_list)
     if item_id not in current_item_ids:
         await callback.answer(DELETE_SELECTION_ITEM_MISSING_MESSAGE, show_alert=True)
@@ -272,11 +283,23 @@ async def handle_delete_selected_items_confirm(
         await callback.answer("Не получилось понять, что удалить.", show_alert=True)
         return
 
-    page_index, selected_item_mask = parsed_callback
+    page_index, selected_item_mask, page_fingerprint = parsed_callback
     current_list_before_delete = await _get_current_list(
         session_factory,
         callback.from_user.id,
     )
+    if not _delete_page_matches_fingerprint(
+        current_list_before_delete,
+        page_index,
+        page_fingerprint,
+    ):
+        await _show_stale_delete_selection(
+            callback,
+            current_list_before_delete,
+            page_index,
+        )
+        return
+
     selected_item_ids = _selected_item_ids_from_page_mask(
         current_list_before_delete,
         page_index,
@@ -329,10 +352,17 @@ async def handle_edit_delete_page_callback(
         return
 
     page_index = parsed_callback
+    await callback.answer()
     current_list = await _get_current_list(session_factory, callback.from_user.id)
 
-    await callback.answer()
     if isinstance(callback.message, Message):
+        if current_list.is_empty:
+            await callback.message.edit_text(
+                format_current_list(current_list),
+                reply_markup=None,
+            )
+            return
+
         await callback.message.edit_text(
             format_delete_selection(
                 current_list,
@@ -345,6 +375,18 @@ async def handle_edit_delete_page_callback(
                 page_index,
             ),
         )
+
+
+@items_router.callback_query(
+    lambda callback: is_legacy_delete_selection_callback(callback.data),
+)
+async def handle_legacy_delete_selection_callback(
+    callback: CallbackQuery,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    await callback.answer(DELETE_SELECTION_STALE_MESSAGE, show_alert=True)
+    current_list = await _get_current_list(session_factory, callback.from_user.id)
+    await _redraw_delete_selection(callback, current_list, page_index=0)
 
 
 @items_router.callback_query(
@@ -408,6 +450,55 @@ def _selected_item_ids_from_page_mask(
         item.item_id
         for index, item in enumerate(page.items)
         if selected_item_mask & (1 << index)
+    )
+
+
+def _delete_page_matches_fingerprint(
+    current_list: CurrentListDTO,
+    page_index: int,
+    page_fingerprint: str,
+) -> bool:
+    page = get_checklist_page(current_list.categories, page_index)
+    if page is None:
+        return False
+
+    current_fingerprint = build_delete_page_fingerprint(
+        tuple(item.item_id for item in page.items),
+    )
+    return current_fingerprint == page_fingerprint
+
+
+async def _show_stale_delete_selection(
+    callback: CallbackQuery,
+    current_list: CurrentListDTO,
+    page_index: int,
+) -> None:
+    await callback.answer(DELETE_SELECTION_STALE_MESSAGE, show_alert=True)
+    await _redraw_delete_selection(callback, current_list, page_index)
+
+
+async def _redraw_delete_selection(
+    callback: CallbackQuery,
+    current_list: CurrentListDTO,
+    page_index: int,
+) -> None:
+    if not isinstance(callback.message, Message):
+        return
+
+    if current_list.is_empty:
+        await callback.message.edit_text(
+            format_current_list(current_list),
+            reply_markup=None,
+        )
+        return
+
+    await callback.message.edit_text(
+        format_delete_selection(
+            current_list,
+            selected_count=0,
+            page_index=page_index,
+        ),
+        reply_markup=delete_items_keyboard(current_list, (), page_index),
     )
 
 

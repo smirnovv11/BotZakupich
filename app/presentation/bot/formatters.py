@@ -11,7 +11,8 @@ from app.application.dto import (
     StartShoppingResult,
 )
 from app.application.errors import ApplicationError, ApplicationErrorCodeEnum
-from app.domain.enums import CategoryCodeEnum, ShoppingItemStatusEnum
+from app.domain.enums import ShoppingItemStatusEnum
+from app.presentation.bot.category_display import category_title
 from app.presentation.bot.pagination import ChecklistPage, get_checklist_page
 
 EMPTY_ADD_MESSAGE = (
@@ -27,33 +28,12 @@ CLEAR_CANCELLED_MESSAGE = "↩️ Очистку отменил."
 CLEAR_EMPTY_MESSAGE = "🧺 Текущего списка уже нет."
 DELETE_SELECTION_EMPTY_MESSAGE = "Выберите хотя бы один товар."
 DELETE_SELECTION_ITEM_MISSING_MESSAGE = "Этот товар уже не в текущем списке."
+DELETE_SELECTION_STALE_MESSAGE = "Список изменился. Выберите товары снова."
 INVALID_CHECKLIST_ACTION_MESSAGE = "Не получилось понять, какой товар отметить."
 INVALID_ARCHIVE_ACTION_MESSAGE = "Не получилось понять действие с архивом."
 SHOPPING_CHECKLIST_EMPTY_MESSAGE = "🧺 В чеклисте пока нет товаров."
 EMPTY_ARCHIVE_MESSAGE = "📦 Архив пока пуст."
 EMPTY_ARCHIVED_LIST_MESSAGE = "📦 В этом архивном походе нет товаров."
-
-CATEGORY_EMOJI_BY_CODE = {
-    CategoryCodeEnum.DAIRY: "🥛",
-    CategoryCodeEnum.BAKERY: "🥖",
-    CategoryCodeEnum.VEGETABLES_GREENS: "🥬",
-    CategoryCodeEnum.FRUITS_BERRIES: "🍎",
-    CategoryCodeEnum.MEAT_POULTRY: "🥩",
-    CategoryCodeEnum.FISH_SEAFOOD: "🐟",
-    CategoryCodeEnum.SAUSAGES_DELI: "🥓",
-    CategoryCodeEnum.EGGS: "🥚",
-    CategoryCodeEnum.GRAINS_PASTA_FLOUR: "🍝",
-    CategoryCodeEnum.CANNED: "🥫",
-    CategoryCodeEnum.FROZEN: "❄️",
-    CategoryCodeEnum.SWEETS_SNACKS: "🍫",
-    CategoryCodeEnum.DRINKS: "🥤",
-    CategoryCodeEnum.TEA_COFFEE: "☕",
-    CategoryCodeEnum.SAUCES_SPICES: "🧂",
-    CategoryCodeEnum.HOUSEHOLD_CHEMICALS: "🧽",
-    CategoryCodeEnum.HYGIENE: "🧼",
-    CategoryCodeEnum.HOME_GOODS: "🏠",
-    CategoryCodeEnum.OTHER: "🧩",
-}
 
 
 def format_clear_result(deleted_item_count: int) -> str:
@@ -71,15 +51,15 @@ def format_delete_selection(
     if current_list.is_empty:
         return EMPTY_LIST_MESSAGE
 
-    lines = [
-        "✏️ Выберите товары для удаления",
-    ]
     page = get_checklist_page(current_list.categories, page_index)
-    if page is not None:
-        lines.append(_format_page_title(page))
+    if page is None:
+        return EMPTY_LIST_MESSAGE
+
+    lines = [_format_paginated_title("✏️ Выберите товары для удаления", page)]
     lines.append("Нажимайте на товары, затем подтвердите удаление.")
     if selected_count:
         lines.append(f"Выбрано: {selected_count}.")
+    _append_page_categories(lines, page)
 
     return "\n".join(lines)
 
@@ -103,7 +83,7 @@ def format_added_items(result: AddItemsResult) -> str:
     for item in result.added_items:
         lines.append(
             f"• {item.display_text} — "
-            f"{_category_title(item.category_code, item.category_name_ru)}",
+            f"{category_title(item.category_code, item.category_name_ru)}",
         )
         if item.is_category_fallback:
             fallback_items.append(item.display_text)
@@ -126,7 +106,7 @@ def format_current_list(current_list: CurrentListDTO) -> str:
     for category in current_list.categories:
         lines.append("")
         lines.append(
-            f"{_category_title(category.category_code, category.category_name_ru)}:",
+            f"{category_title(category.category_code, category.category_name_ru)}:",
         )
         for item in category.items:
             lines.append(f"{_status_marker(item)} {item.display_text}")
@@ -146,7 +126,7 @@ def format_checklist(current_list: CurrentListDTO) -> str:
     for category in current_list.categories:
         lines.append("")
         lines.append(
-            f"{_category_title(category.category_code, category.category_name_ru)}:",
+            f"{category_title(category.category_code, category.category_name_ru)}:",
         )
         for item in category.items:
             lines.append(f"{_status_marker(item)} {item.display_text}")
@@ -162,12 +142,8 @@ def format_checklist_page(current_list: CurrentListDTO, page_index: int = 0) -> 
     if page is None:
         return SHOPPING_CHECKLIST_EMPTY_MESSAGE
 
-    lines = [
-        "🛒 Чеклист покупок",
-        _format_page_title(page),
-    ]
-    for item in page.items:
-        lines.append(f"{_status_marker(item)} {item.display_text}")
+    lines = [_format_paginated_title("🛒 Чеклист покупок", page)]
+    _append_page_categories(lines, page)
 
     return "\n".join(lines)
 
@@ -214,7 +190,7 @@ def format_archived_list(archived_list: ArchivedListDTO) -> str:
     for category in archived_list.categories:
         lines.append("")
         lines.append(
-            f"{_category_title(category.category_code, category.category_name_ru)}:",
+            f"{category_title(category.category_code, category.category_name_ru)}:",
         )
         for item in category.items:
             lines.append(f"{_status_marker(item)} {item.display_text}")
@@ -235,11 +211,9 @@ def format_archived_list_page(
 
     archived_at = _format_datetime(archived_list.archived_at)
     lines = [
-        f"📦 Архивный поход от {archived_at}",
-        _format_page_title(page),
+        _format_paginated_title(f"📦 Архивный поход от {archived_at}", page),
     ]
-    for item in page.items:
-        lines.append(f"{_status_marker(item)} {item.display_text}")
+    _append_page_categories(lines, page)
 
     return "\n".join(lines)
 
@@ -275,19 +249,21 @@ def _status_marker(item: ListItemDTO) -> str:
     return "☐"
 
 
-def _category_title(category_code: str, category_name_ru: str) -> str:
-    emoji = CATEGORY_EMOJI_BY_CODE.get(
-        category_code,
-        CATEGORY_EMOJI_BY_CODE[CategoryCodeEnum.OTHER],
-    )
-    return f"{emoji} {category_name_ru}"
+def _format_paginated_title(title: str, page: ChecklistPage) -> str:
+    if page.total_pages == 1:
+        return title
+
+    return f"{title} · {page.page_index + 1}/{page.total_pages}"
 
 
-def _format_page_title(page: ChecklistPage) -> str:
-    return (
-        f"{_category_title(page.category_code, page.category_name_ru)} · "
-        f"{page.page_index + 1}/{page.total_pages}"
-    )
+def _append_page_categories(lines: list[str], page: ChecklistPage) -> None:
+    for category in page.categories:
+        lines.append("")
+        lines.append(
+            f"{category_title(category.category_code, category.category_name_ru)}:",
+        )
+        for item in category.items:
+            lines.append(f"{_status_marker(item)} {item.display_text}")
 
 
 def _format_datetime(value) -> str:

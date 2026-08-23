@@ -82,8 +82,8 @@ def test_archived_list_keyboard_has_restore_all_and_restore_item_buttons() -> No
 
     assert [[button.text for button in row] for row in keyboard.inline_keyboard] == [
         [ButtonTextEnum.RESTORE_ALL],
-        ["♻️ молоко"],
-        ["♻️ сыр"],
+        ["♻️ 🥛 молоко"],
+        ["♻️ 🥛 сыр"],
     ]
     assert [
         [button.callback_data for button in row] for row in keyboard.inline_keyboard
@@ -113,7 +113,7 @@ def test_archived_list_keyboard_paginates_restore_item_buttons() -> None:
                             status=ShoppingItemStatusEnum.PENDING,
                             position=item_id,
                         )
-                        for item_id in range(101, 113)
+                        for item_id in range(101, 114)
                     ),
                 ),
             ),
@@ -122,8 +122,8 @@ def test_archived_list_keyboard_paginates_restore_item_buttons() -> None:
 
     assert len(keyboard.inline_keyboard) == 12
     assert keyboard.inline_keyboard[0][0].text == ButtonTextEnum.RESTORE_ALL
-    assert keyboard.inline_keyboard[1][0].text == "♻️ товар 101"
-    assert keyboard.inline_keyboard[10][0].text == "♻️ товар 110"
+    assert keyboard.inline_keyboard[1][0].text == "♻️ 🥛 товар 101"
+    assert keyboard.inline_keyboard[10][0].text == "♻️ 🥛 товар 110"
     assert keyboard.inline_keyboard[11][0].text == ButtonTextEnum.NEXT_PAGE
     assert keyboard.inline_keyboard[11][0].callback_data == (
         f"{CallbackPrefixEnum.ARCHIVED_RESTORE_PAGE}:11:1"

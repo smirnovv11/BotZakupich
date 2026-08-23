@@ -1,6 +1,6 @@
 # Project Context
 
-Дата обновления: 2026-08-22
+Дата обновления: 2026-08-23
 
 Рабочее имя проекта: `Zakupich`.
 
@@ -19,6 +19,10 @@
 ## Текущий статус
 
 MVP реализован полностью по текущему implementation plan. Tasks 01-22 из `.omx/plans/implementation-plan.md` и mini-feature Task 20.5 выполнены.
+
+После MVP доработана checklist pagination: страницы формируются по общему числу
+товаров с адаптивным лимитом 10–12, поддерживают несколько категорий и используют
+batch-загрузку категорий для более быстрого отклика.
 
 Созданы и реализованы:
 
@@ -46,7 +50,11 @@ MVP реализован полностью по текущему implementation
 - aiogram bootstrap, `/start`, add/view handlers, shopping checklist handlers и archive/restore handlers.
 - `app/application/errors.py` с `ApplicationError` и `ApplicationErrorCodeEnum` для expected use-case failures.
 - Режим `✏️ Изменить` для выборочного удаления товаров из текущего draft/shopping списка.
-- Гибридная pagination для inline checklist: одна категория на страницу, максимум 10 товаров.
+- Адаптивная pagination для inline checklist: базово 10 товаров на страницу,
+  короткий хвост из 1–2 товаров поглощается предыдущей страницей до 12, а
+  несколько категорий могут отображаться на одном экране.
+- Категории для current/archive checklist загружаются одним batch-запросом вместо
+  последовательного запроса каждой категории.
 - Расширенный curated household dictionary для локальной категоризации бытовых товаров.
 - Композиционные integration smoke tests полного пути `draft -> shopping -> archived -> restored draft`.
 
@@ -78,7 +86,7 @@ MVP реализован полностью по текущему implementation
 - Task 21: Add integration smoke tests for complete MVP flows.
 - Task 22: Add documentation and developer runbook.
 
-Последние проверки после Task 22:
+Последние проверки после адаптивной pagination:
 
 ```bash
 pytest --basetemp .pytest_tmp
@@ -88,7 +96,7 @@ ruff format --check .
 
 Результат:
 
-- `pytest --basetemp .pytest_tmp`: 203 passed.
+- `pytest --basetemp .pytest_tmp`: 235 passed.
 - `ruff check .`: passed.
 - `ruff format --check .`: passed.
 

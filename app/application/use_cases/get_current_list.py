@@ -8,7 +8,6 @@ from app.application.services.list_presenter import (
     ListPresenter,
     empty_current_list,
 )
-from app.domain.categories import CATEGORY_DEFINITIONS
 
 
 class GetCurrentListUseCase:
@@ -33,12 +32,6 @@ class GetCurrentListUseCase:
                 return empty_current_list()
 
             items = await unit_of_work.shopping_items.list_by_list_id(shopping_list.id)
-            categories = []
-            for category_definition in CATEGORY_DEFINITIONS:
-                category = await unit_of_work.categories.get_by_code(
-                    category_definition.code,
-                )
-                if category is not None:
-                    categories.append(category)
+            categories = await unit_of_work.categories.list_all()
 
             return self.presenter.present(shopping_list, items, categories)

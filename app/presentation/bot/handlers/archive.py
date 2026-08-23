@@ -135,6 +135,7 @@ async def handle_archived_restore_page_callback(
         return
 
     archived_list_id, page_index = parsed_callback
+    await callback.answer()
     use_case = make_get_archived_list_use_case(session_factory)
     try:
         archived_list = await use_case.execute(
@@ -144,10 +145,13 @@ async def handle_archived_restore_page_callback(
             ),
         )
     except ValueError as error:
-        await callback.answer(format_archive_error(error), show_alert=True)
+        if isinstance(callback.message, Message):
+            await callback.message.edit_text(
+                format_archive_error(error),
+                reply_markup=None,
+            )
         return
 
-    await callback.answer()
     if isinstance(callback.message, Message):
         await callback.message.edit_text(
             format_archived_list_page(archived_list, page_index),

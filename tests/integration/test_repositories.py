@@ -68,6 +68,20 @@ async def test_repositories_create_and_read_basic_entities(db_session) -> None:
 
 
 @pytest.mark.asyncio
+async def test_category_repository_lists_all_in_stable_order(db_session) -> None:
+    categories = SqlAlchemyCategoryRepository(db_session)
+
+    result = await categories.list_all()
+
+    assert len(result) == 19
+    assert [(category.sort_order, category.id) for category in result] == sorted(
+        (category.sort_order, category.id) for category in result
+    )
+    assert result[0].code == CategoryCodeEnum.DAIRY
+    assert result[-1].code == CategoryCodeEnum.OTHER
+
+
+@pytest.mark.asyncio
 async def test_input_message_unique_constraint_is_enforced(db_session) -> None:
     users = SqlAlchemyUserRepository(db_session)
     input_messages = SqlAlchemyInputMessageRepository(db_session)

@@ -117,9 +117,16 @@ async def handle_shopping_checklist_page_callback(
         await callback.answer(INVALID_CHECKLIST_ACTION_MESSAGE, show_alert=True)
         return
 
-    current_list = await _get_current_list(session_factory, callback.from_user.id)
     await callback.answer()
+    current_list = await _get_current_list(session_factory, callback.from_user.id)
     if isinstance(callback.message, Message):
+        if current_list.is_empty:
+            await callback.message.edit_text(
+                format_checklist_page(current_list, page_index),
+                reply_markup=None,
+            )
+            return
+
         await callback.message.edit_text(
             format_checklist_page(current_list, page_index),
             reply_markup=checklist_keyboard(current_list, page_index),
