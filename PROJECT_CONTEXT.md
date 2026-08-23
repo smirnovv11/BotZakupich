@@ -1,6 +1,6 @@
 # Project Context
 
-Дата обновления: 2026-08-21
+Дата обновления: 2026-08-22
 
 Рабочее имя проекта: `Zakupich`.
 
@@ -18,7 +18,7 @@
 
 ## Текущий статус
 
-MVP реализован до Telegram flows включительно. Tasks 01-20 из `.omx/plans/implementation-plan.md` выполнены.
+MVP реализован полностью по текущему implementation plan. Tasks 01-22 из `.omx/plans/implementation-plan.md` и mini-feature Task 20.5 выполнены.
 
 Созданы и реализованы:
 
@@ -28,7 +28,7 @@ MVP реализован до Telegram flows включительно. Tasks 01-
 - `.omx/plans/implementation-plan.md` — пошаговый backlog реализации.
 - `.omx/specs/deep-interview-telegram-shopping-bot.md` — исходная спецификация после интервью.
 - `pyproject.toml` и `poetry.lock` — Poetry-проект с MVP-зависимостями без OpenAI runtime dependency.
-- `README.md` — базовые команды и текущая developer-документация.
+- `README.md` — полный developer runbook: setup, environment, database, migrations, seed, запуск, проверки, deployment и troubleshooting.
 - `.gitignore` — исключения для Python, локального окружения, IDE и OS-файлов.
 - `.env.example` — безопасные placeholder-переменные окружения.
 - `app/` — clean/onion структура пакетов: `core`, `domain`, `application`, `infrastructure`, `presentation`.
@@ -45,6 +45,10 @@ MVP реализован до Telegram flows включительно. Tasks 01-
 - Use cases для добавления товаров, просмотра текущего списка, shopping lifecycle и archive/restore.
 - aiogram bootstrap, `/start`, add/view handlers, shopping checklist handlers и archive/restore handlers.
 - `app/application/errors.py` с `ApplicationError` и `ApplicationErrorCodeEnum` для expected use-case failures.
+- Режим `✏️ Изменить` для выборочного удаления товаров из текущего draft/shopping списка.
+- Гибридная pagination для inline checklist: одна категория на страницу, максимум 10 товаров.
+- Расширенный curated household dictionary для локальной категоризации бытовых товаров.
+- Композиционные integration smoke tests полного пути `draft -> shopping -> archived -> restored draft`.
 
 Выполненные шаги:
 
@@ -68,8 +72,13 @@ MVP реализован до Telegram flows включительно. Tasks 01-
 - Task 18: Implement bot handlers for add/view list.
 - Task 19: Implement bot handlers for shopping checklist.
 - Task 20: Implement bot handlers for finish/archive/restore.
+- Task 20.5.1: Add selective item deletion from the current list.
+- Task 20.5.2: Add pagination for inline checklists.
+- Task 20.5.3: Expand the local household product dictionary.
+- Task 21: Add integration smoke tests for complete MVP flows.
+- Task 22: Add documentation and developer runbook.
 
-Последние проверки после Task 20 и code-review fixes:
+Последние проверки после Task 22:
 
 ```bash
 pytest --basetemp .pytest_tmp
@@ -79,7 +88,7 @@ ruff format --check .
 
 Результат:
 
-- `pytest --basetemp .pytest_tmp`: 139 passed.
+- `pytest --basetemp .pytest_tmp`: 203 passed.
 - `ruff check .`: passed.
 - `ruff format --check .`: passed.
 
@@ -168,33 +177,16 @@ Domain не должен импортировать Telegram, SQLAlchemy session
 
 ## Следующий шаг
 
-Перед Task 21 выполнить mini-feature step: `TASK_20_5_MINI_FEATURES.md`.
+Текущий implementation plan завершен. Обязательных задач в `.omx/plans/implementation-plan.md` больше нет.
 
-Task 20.5 включает:
-
-1. Добавить кнопку `Удалить` при просмотре текущего списка и flow выбора товаров для удаления.
-2. Добавить pagination для inline checklist: shopping checklist, edit/delete checklist, restore selected checklist where applicable.
-3. Расширить локальный categorizer/parser vocabulary для обычных товаров: `кола`, `чипсы`, `сливки`, `мясо`, `курица`, `свинина`, `бедра`, `голень`.
-
-После Task 20.5 продолжить по `.omx/plans/implementation-plan.md` с Task 21: Add integration smoke tests for complete flows.
-
-Task 21 должен добавить `tests/integration/test_full_mvp_flow.py` и покрыть use-case/repository сценарии без реального Telegram API:
-
-1. User sends `молоко, хлеб, яйца`, starts shopping, toggles one item, finishes shopping, archive contains list.
-2. User restores selected item from archive into new draft.
-3. User starts shopping, sends `сыр` while shopping, item appears in active checklist.
-4. Unknown item goes to `Прочие`, no AI call exists.
-
-После Task 21 останется Task 22: обновить README как developer runbook.
+Перед следующим продуктовым этапом рекомендуется провести ручной Telegram acceptance smoke на реальном bot token, затем выбрать отдельным решением одно направление: deployment/release preparation, LOW watch items или новая продуктовая фича.
 
 Рекомендуемый prompt для следующего шага:
 
 ```text
 Прочитай PROJECT_CONTEXT.md, AGENTS.md, DATABASE_SCHEMA.md и .omx/plans/implementation-plan.md.
-Прочитай TASK_20_5_MINI_FEATURES.md.
-Продолжи реализацию с Task 20.5: List edit mode, checklist pagination, and catalog expansion.
-Следуй acceptance criteria, не добавляй OpenAI/AI runtime, shared lists, list_members или Redis.
-После реализации запусти pytest и ruff.
+Текущий MVP implementation plan завершен. Проведи code review и ручной acceptance smoke перед release либо помоги выбрать следующую продуктовую задачу.
+Сохраняй границы MVP: без OpenAI/AI runtime, shared lists, list_members и Redis без отдельного решения.
 ```
 
 ## Low-priority watch items
@@ -203,6 +195,7 @@ Task 21 должен добавить `tests/integration/test_full_mvp_flow.py` 
 - Direct async handler tests are still missing for shopping/archive handlers.
 - Inline keyboard labels use unbounded `display_text` and could be truncated presentation-only later.
 - `ApplicationError` introduced, but broader typed-error cleanup can be continued if needed.
+- Delete-selection state сейчас хранится page-local в компактном callback bitmask; после подключения Redis перейти на server-side temporary selection (`selection_token -> selected_item_ids`) с TTL.
 
 ## Стоп-правила
 
