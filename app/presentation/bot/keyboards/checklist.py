@@ -9,6 +9,7 @@ from app.presentation.bot.callbacks import (
     build_shopping_checklist_page_callback,
     build_toggle_item_callback,
 )
+from app.presentation.bot.category_display import category_emoji
 from app.presentation.bot.pagination import get_checklist_page
 
 
@@ -23,14 +24,15 @@ def checklist_keyboard(
     item_rows = [
         [
             InlineKeyboardButton(
-                text=_checklist_button_text(item),
+                text=_checklist_button_text(item, category.category_code),
                 callback_data=build_toggle_item_callback(
                     item.item_id,
                     page.page_index,
                 ),
             ),
         ]
-        for item in page.items
+        for category in page.categories
+        for item in category.items
     ]
 
     navigation_row = _navigation_row(
@@ -47,9 +49,9 @@ def checklist_keyboard(
     )
 
 
-def _checklist_button_text(item: ListItemDTO) -> str:
+def _checklist_button_text(item: ListItemDTO, category_code: str) -> str:
     marker = "✅" if item.status == ShoppingItemStatusEnum.BOUGHT else "☐"
-    return f"{marker} {item.display_text}"
+    return f"{marker} {category_emoji(category_code)} {item.display_text}"
 
 
 def _navigation_row(

@@ -59,6 +59,8 @@ class CategoryRepository(Protocol):
 
     async def get_default(self) -> Any | None: ...
 
+    async def list_all(self) -> list[Any]: ...
+
 
 class InputMessageRepository(Protocol):
     async def get_by_telegram_message(

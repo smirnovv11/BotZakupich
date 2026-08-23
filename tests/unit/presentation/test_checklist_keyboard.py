@@ -35,8 +35,8 @@ def test_checklist_keyboard_has_one_toggle_button_per_item() -> None:
     )
 
     assert [[button.text for button in row] for row in keyboard.inline_keyboard] == [
-        ["☐ молоко"],
-        ["✅ сыр"],
+        ["☐ 🥛 молоко"],
+        ["✅ 🥛 сыр"],
     ]
     assert [
         [button.callback_data for button in row] for row in keyboard.inline_keyboard
@@ -64,7 +64,7 @@ def test_checklist_keyboard_paginates_category_items() -> None:
                             status=ShoppingItemStatusEnum.PENDING,
                             position=item_id,
                         )
-                        for item_id in range(1, 13)
+                        for item_id in range(1, 14)
                     ),
                 ),
             ),
@@ -72,8 +72,8 @@ def test_checklist_keyboard_paginates_category_items() -> None:
     )
 
     assert len(keyboard.inline_keyboard) == 11
-    assert keyboard.inline_keyboard[0][0].text == "☐ товар 1"
-    assert keyboard.inline_keyboard[9][0].text == "☐ товар 10"
+    assert keyboard.inline_keyboard[0][0].text == "☐ 🥛 товар 1"
+    assert keyboard.inline_keyboard[9][0].text == "☐ 🥛 товар 10"
     assert keyboard.inline_keyboard[10][0].text == ButtonTextEnum.NEXT_PAGE
     assert keyboard.inline_keyboard[10][0].callback_data == (
         f"{CallbackPrefixEnum.SHOPPING_CHECKLIST_PAGE}:1"
@@ -98,7 +98,7 @@ def test_checklist_keyboard_last_page_has_back_only() -> None:
                             status=ShoppingItemStatusEnum.PENDING,
                             position=item_id,
                         )
-                        for item_id in range(1, 13)
+                        for item_id in range(1, 14)
                     ),
                 ),
             ),
@@ -107,7 +107,8 @@ def test_checklist_keyboard_last_page_has_back_only() -> None:
     )
 
     assert [[button.text for button in row] for row in keyboard.inline_keyboard] == [
-        ["☐ товар 11"],
-        ["☐ товар 12"],
+        ["☐ 🥛 товар 11"],
+        ["☐ 🥛 товар 12"],
+        ["☐ 🥛 товар 13"],
         [ButtonTextEnum.BACK],
     ]

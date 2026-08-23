@@ -15,7 +15,6 @@ from app.application.dto import (
 from app.application.errors import ApplicationError, ApplicationErrorCodeEnum
 from app.application.ports.unit_of_work import UnitOfWork
 from app.application.services.list_presenter import ListPresenter
-from app.domain.categories import CATEGORY_DEFINITIONS
 
 
 class ListArchivesUseCase:
@@ -79,7 +78,7 @@ class GetArchivedListUseCase:
                 )
 
             items = await unit_of_work.shopping_items.list_by_list_id(archived_list.id)
-            categories = await _load_categories(unit_of_work)
+            categories = await unit_of_work.categories.list_all()
             presented = self.presenter.present(archived_list, items, categories)
 
             return ArchivedListDTO(
@@ -170,15 +169,6 @@ class RestoreArchivedItemsUseCase:
                 list_status=current_list.status,
                 restored_items=tuple(restored_items),
             )
-
-
-async def _load_categories(unit_of_work: UnitOfWork) -> list[object]:
-    categories = []
-    for category_definition in CATEGORY_DEFINITIONS:
-        category = await unit_of_work.categories.get_by_code(category_definition.code)
-        if category is not None:
-            categories.append(category)
-    return categories
 
 
 def _select_items_to_restore(

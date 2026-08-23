@@ -10,6 +10,7 @@ from app.presentation.bot.callbacks import (
     build_restore_archived_item_callback,
     build_restore_archived_list_callback,
 )
+from app.presentation.bot.category_display import category_emoji
 from app.presentation.bot.pagination import get_checklist_page
 
 
@@ -47,14 +48,15 @@ def archived_list_keyboard(
         inline_keyboard.extend(
             [
                 InlineKeyboardButton(
-                    text=_restore_item_button_text(item),
+                    text=_restore_item_button_text(item, category.category_code),
                     callback_data=build_restore_archived_item_callback(
                         archived_list.list_id,
                         item.item_id,
                     ),
                 ),
             ]
-            for item in page.items
+            for category in page.categories
+            for item in category.items
         )
         navigation_row = _archive_restore_navigation_row(
             list_id=archived_list.list_id,
@@ -72,8 +74,8 @@ def _archive_summary_button_text(index: int, item_count: int) -> str:
     return f"📦 Поход {index} · товаров: {item_count}"
 
 
-def _restore_item_button_text(item: ListItemDTO) -> str:
-    return f"♻️ {item.display_text}"
+def _restore_item_button_text(item: ListItemDTO, category_code: str) -> str:
+    return f"♻️ {category_emoji(category_code)} {item.display_text}"
 
 
 def _archive_restore_navigation_row(

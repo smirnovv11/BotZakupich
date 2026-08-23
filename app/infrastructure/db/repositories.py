@@ -156,6 +156,12 @@ class SqlAlchemyCategoryRepository:
             select(Category).where(Category.is_default.is_(True)),
         )
 
+    async def list_all(self) -> list[Category]:
+        result = await self.session.scalars(
+            select(Category).order_by(Category.sort_order, Category.id),
+        )
+        return list(result)
+
 
 class SqlAlchemyInputMessageRepository:
     def __init__(self, session: AsyncSession) -> None:
